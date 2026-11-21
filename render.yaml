@@ -1,0 +1,37 @@
+# Render Blueprint: Dashboard → New → Blueprint → выбрать этот репозиторий.
+services:
+  - type: web
+    name: itachi-store
+    runtime: node
+    # Бот работает через long polling и должен быть включён всегда,
+    # а база (SQLite) и чеки — на диске. Бесплатный план засыпает и стирает файлы.
+    plan: starter
+    region: frankfurt
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DB_PATH
+        value: /var/data/itachi.db
+      - key: TRUST_PROXY
+        value: "true"
+      - key: PUBLIC_SITE_URL
+        sync: false   # https://itachi-store.onrender.com или свой домен
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: DONIX_API_KEY
+        sync: false
+      - key: DONIX_WEBHOOK_SECRET
+        sync: false
+      - key: DONIX_BASE_URL
+        value: https://donix.org/api/partner/v1
+      - key: MARKUP_PERCENT
+        value: "10"
+      - key: ORDER_TTL_MINUTES
+        value: "30"

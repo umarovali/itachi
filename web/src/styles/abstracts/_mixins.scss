@@ -1,0 +1,14 @@
+@use "./variables" as v;
+@mixin container {
+  width: min(100% - 32px, v.$max-width);
+  margin-inline: auto;
+}
+@mixin glass {
+  background: color-mix(in srgb, v.$panel 84%, transparent);
+  border: 1px solid v.$line;
+  backdrop-filter: blur(18px);
+}
+@mixin lift {
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  &:hover { transform: translateY(-3px); box-shadow: v.$shadow-card-hover; }
+}

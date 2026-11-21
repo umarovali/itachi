@@ -1,0 +1,143 @@
+// Новые элементы оформления заказа (проверка ID, промокод, предупреждение, таймер),
+// в стиле исходного дизайна.
+@use "../styles/abstracts/variables" as v;
+
+.game-store {
+  .player-check {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    .btn { padding: 11px 16px; }
+    &__ok { color: #45d483; font-size: 14px; b { color: v.$ink; } }
+    &__warn { color: v.$ember; font-size: 13px; }
+  }
+
+  .promo-row {
+    display: flex; gap: 8px;
+    input { flex: 1; min-width: 0; }
+    .btn { padding: 0 16px; grid-column: auto; }
+  }
+
+  .payment-box {
+    &__approx { margin-top: -8px; font-size: 15px; font-weight: 700; color: v.$muted; }
+    &__notice {
+      max-width: 460px; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid rgba(255,123,66,.35); background: rgba(255,123,66,.08);
+      color: v.$ink; font-size: 13px; line-height: 1.55; text-align: left;
+      b { color: v.$ember; }
+    }
+    &__timer {
+      font-size: 13px; color: v.$muted;
+      b { color: v.$ink; font-variant-numeric: tabular-nums; }
+      &--expired { color: v.$ember; }
+    }
+    &__sender {
+      width: min(100%, 330px); display: flex; flex-direction: column; gap: 7px; text-align: left;
+      span { font-size: 12px; color: v.$muted; }
+      input {
+        width: 100%; padding: 14px 15px; border-radius: 12px; border: 1px solid v.$line;
+        background: v.$bg; color: v.$ink; outline: none;
+        &:focus { border-color: v.$crimson; }
+      }
+    }
+  }
+
+  .btn:focus-visible, input:focus-visible { outline: 2px solid v.$ember; outline-offset: 2px; }
+}
+
+// ---------- Чек: состояния «ждём» / «ошибка» (исходный — зелёный «готово»)
+.order-done {
+  &__spinner {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.35); border-top-color: #fff;
+    animation: order-spin .9s linear infinite;
+  }
+  &--wait {
+    .order-done__head { background: linear-gradient(180deg, #fff4e8, #fff); p { color: #c2410c; } }
+    .order-done__check { background: #f97316; box-shadow: 0 10px 24px rgba(249,115,22,.35); }
+  }
+  &--bad {
+    .order-done__head { background: linear-gradient(180deg, #fdecec, #fff); p { color: #b91c1c; } }
+    .order-done__check { background: #dc2626; box-shadow: 0 10px 24px rgba(220,38,38,.35); }
+  }
+  &__note a { color: #0f172a; font-weight: 700; text-decoration: underline; }
+}
+@keyframes order-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .order-done__spinner { animation-duration: 3s; } }
+
+// ---------- Страница /order/:id
+.order-page {
+  padding: 48px 0 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  .eyebrow { display:inline-flex; align-items:center; gap:8px; color:v.$crimson; font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; &::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor;} }
+  .order-done { width: 100%; }
+  &__error {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 24px; border: 1px solid v.$line; border-radius: 18px; background: v.$panel; color: v.$ember;
+  }
+  .btn { padding:14px 18px; border-radius:12px; border:1px solid v.$line; font-weight:700; color:v.$muted; background:transparent; }
+  .btn--primary { background:v.$crimson; border-color:v.$crimson; color:#fff; }
+}
+
+// ---------- Адаптивность
+@media (max-width: 700px) {
+  // 16px — чтобы iPhone не увеличивал страницу при нажатии на поле.
+  .game-store .order-form input,
+  .game-store .payment-box__sender input { font-size: 16px; }
+  .game-store {
+    .payment-method { width: 100%; max-width: 330px; }
+    .payment-method__option { flex: 1; padding: 10px 8px; }
+    .payment-box__qr { width: min(220px, 72vw); height: auto; aspect-ratio: 1; }
+    .payment-box__amount { font-size: 26px; }
+    .order-summary { flex-direction: column; gap: 4px; }
+  }
+  .order-done {
+    border-radius: 20px;
+    &__head h3 { font-size: 22px; }
+    &__rows dd { font-size: 13px; }
+    &__total b { font-size: 28px; }
+  }
+}
+@media (max-width: 560px) {
+  .game-store {
+    .player-check { flex-direction: column; align-items: stretch; .btn { width: 100%; } }
+    .payment-box__notice { font-size: 12.5px; }
+  }
+  .order-page { padding-top: 28px; }
+}
+@media (max-width: 360px) {
+  .site-header__wordmark { font-size: 12px; }
+  .site-header__brand { gap: 8px; }
+  .currency-switch__toggle { padding: 8px 10px; gap: 6px; }
+  .game-store__order { padding: 18px 12px; }
+  .order-done__rows { padding: 6px 14px 12px; }
+}
+
+// Узкие телефоны: длинные заголовки не должны вылезать за экран.
+@media (max-width: 400px) {
+  .game-store h1 { font-size: clamp(28px, 9.4vw, 38px); overflow-wrap: anywhere; }
+  .game-store__copy p { font-size: 15px; }
+  .home h1 { font-size: clamp(34px, 11vw, 42px); }
+}
+
+.order-done__note:last-child { padding-bottom: 20px; }
+
+// ---------- Чек оплаты
+.game-store .receipt-picker {
+  width: min(100%, 330px); display: flex; flex-direction: column; gap: 7px; text-align: left;
+  &__label { font-size: 12px; color: v.$muted; em { font-style: normal; opacity: .65; } }
+  &__input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  &__drop {
+    display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px 14px; cursor: pointer;
+    border: 1.5px dashed v.$line; border-radius: 14px; background: v.$bg; color: v.$muted; font-size: 13px; line-height: 1.4;
+    transition: border-color .2s, background .2s;
+    &:hover { border-color: v.$crimson; color: v.$ink; }
+    &--done { border-style: solid; border-color: rgba(69,212,131,.55); color: #45d483; }
+    &--error { border-color: v.$ember; }
+    &--uploading { opacity: .7; cursor: progress; }
+    &--disabled { opacity: .5; pointer-events: none; }
+  }
+  &__input:focus-visible + .receipt-picker__error, &__drop:focus-within { outline: 2px solid v.$ember; outline-offset: 2px; }
+  &__icon { font-size: 26px; }
+  &__preview { width: 52px; height: 52px; object-fit: cover; border-radius: 10px; flex-shrink: 0; border: 1px solid v.$line; }
+  &__error { color: v.$ember; font-size: 12.5px; }
+}

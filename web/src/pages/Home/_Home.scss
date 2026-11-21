@@ -1,0 +1,20 @@
+@use "../../styles/abstracts/variables" as v;
+.home {
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;color:v.$crimson;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:17px;&::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}}
+  &__hero{position:relative;min-height:500px;display:flex;align-items:center;overflow:hidden;border-bottom:1px solid v.$line}
+  &__hero-copy{position:relative;z-index:1;max-width:720px;padding:75px 0}
+  h1{font-size:clamp(42px,7vw,78px);margin-bottom:22px;span{color:v.$crimson}}
+  &__hero-copy p{max-width:600px;color:v.$muted;font-size:17px;line-height:1.65}
+  &__chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:26px;span{padding:8px 11px;border:1px solid v.$line;border-radius:99px;background:v.$panel;color:v.$muted;font-size:11px}}
+  &__bg-sharingan{position:absolute;z-index:0;top:32%;left:50%;transform:translate(-50%,-50%);opacity:.16;pointer-events:none;filter:drop-shadow(0 0 90px rgba(213,34,53,.35))}
+  &__games,&__how{padding:78px 0}
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:25px;margin-bottom:28px;h2{font-size:32px}.section-head p{color:v.$muted;font-size:13px}}
+  &__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  &__how{border-top:1px solid v.$line}
+  &__how h2{font-size:clamp(27px,4vw,45px);max-width:700px}
+  &__steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px}
+  &__steps div{padding:20px;border:1px solid v.$line;border-radius:17px;background:v.$panel;display:flex;flex-direction:column;gap:22px;min-height:120px;b{color:v.$crimson;font-family:v.$font-display;font-size:12px}span{color:v.$muted;font-size:13px}}
+  @media(max-width:850px){&__bg-sharingan{width:420px!important;height:420px!important;opacity:.2}.home__grid{grid-template-columns:repeat(2,1fr);gap:10px}.home__steps{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){&__hero{min-height:450px}.home__hero-copy{padding:50px 0}.home__steps{grid-template-columns:1fr}.section-head{flex-direction:column;align-items:flex-start!important}&__bg-sharingan{width:320px!important;height:320px!important}.home__grid{gap:8px}}
+  @media(max-width:320px){&__bg-sharingan{width:260px!important;height:260px!important}.home__chips span{padding:6px 9px;font-size:10px}.home__grid{gap:6px}}
+}

@@ -1,0 +1,99 @@
+export type CurrencyCode = "KGS" | "RUB" | "KZT" | "UZS";
+
+export interface CurrencyInfo {
+  code: CurrencyCode;
+  /** Короткое обозначение после суммы: «95 сом», «120 ₽». */
+  symbol: string;
+  /** Название в переключателе. */
+  name: string;
+  /** До какого шага округляем цену вверх: 1 → 95, 10 → 1 240, 100 → 14 300. */
+  roundStep: number;
+}
+
+export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
+  KGS: { code: "KGS", symbol: "сом", name: "Сом", roundStep: 1 },
+  RUB: { code: "RUB", symbol: "₽", name: "Рубль", roundStep: 1 },
+  KZT: { code: "KZT", symbol: "₸", name: "Тенге", roundStep: 10 },
+  UZS: { code: "UZS", symbol: "сум", name: "Сум", roundStep: 100 },
+};
+
+export const CURRENCY_LIST = Object.values(CURRENCIES);
+export const DEFAULT_CURRENCY: CurrencyCode = "KGS";
+
+/** Сколько единиц валюты стоит 1 USD. */
+export type Rates = Record<CurrencyCode, number>;
+
+/**
+ * Валюта, в которой реально принимается оплата (O!Bank / Элкарт).
+ * Покупатели из других стран платят в сомах — их банк сам конвертирует по своему курсу.
+ */
+export const PAY_CURRENCY: CurrencyCode = "KGS";
+
+/** Примерная сумма в валюте покупателя — только для показа, платят всё равно в сомах. */
+export function somToDisplay(som: number, code: CurrencyCode, rates: Rates): number {
+  if (code === PAY_CURRENCY) return som;
+  const step = CURRENCIES[code].roundStep;
+  return Math.round((som / rates.KGS) * rates[code] / step) * step;
+}
+
+/** «95 сом» или «≈ 1 240 ₸». */
+export function formatDisplay(som: number, code: CurrencyCode, rates: Rates): string {
+  const text = formatMoney(somToDisplay(som, code, rates), code);
+  return code === PAY_CURRENCY ? text : `≈ ${text}`;
+}
+
+export function formatMoney(amount: number, code: CurrencyCode): string {
+  return `${amount.toLocaleString("ru-RU")} ${CURRENCIES[code].symbol}`;
+}
+
+const TZ_PREFIX_TO_CURRENCY: Array<[string[], CurrencyCode]> = [
+  [["Asia/Bishkek"], "KGS"],
+  [["Asia/Almaty", "Asia/Qostanay", "Asia/Aqtobe", "Asia/Aqtau", "Asia/Atyrau", "Asia/Oral", "Asia/Qyzylorda"], "KZT"],
+  [["Asia/Tashkent", "Asia/Samarkand"], "UZS"],
+  [
+    [
+      "Europe/Moscow", "Europe/Kaliningrad", "Europe/Samara", "Europe/Volgograd", "Europe/Saratov",
+      "Europe/Ulyanovsk", "Europe/Astrakhan", "Europe/Kirov", "Asia/Yekaterinburg", "Asia/Omsk",
+      "Asia/Novosibirsk", "Asia/Barnaul", "Asia/Tomsk", "Asia/Novokuznetsk", "Asia/Krasnoyarsk",
+      "Asia/Irkutsk", "Asia/Chita", "Asia/Yakutsk", "Asia/Khandyga", "Asia/Vladivostok", "Asia/Ust-Nera",
+      "Asia/Magadan", "Asia/Sakhalin", "Asia/Srednekolymsk", "Asia/Kamchatka", "Asia/Anadyr",
+    ],
+    "RUB",
+  ],
+];
+
+/**
+ * Угадываем валюту по часовому поясу устройства — без запроса геолокации.
+ * Если не узнали страну — сом.
+ */
+export function detectCurrency(): CurrencyCode {
+  let tz = "";
+  try {
+    tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+  } catch {
+    return DEFAULT_CURRENCY;
+  }
+  for (const [zones, code] of TZ_PREFIX_TO_CURRENCY) {
+    if (zones.includes(tz)) return code;
+  }
+  return DEFAULT_CURRENCY;
+}
+
+const STORAGE_KEY = "itachi.currency";
+
+export function loadSavedCurrency(): CurrencyCode | null {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    return v && v in CURRENCIES ? (v as CurrencyCode) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveCurrency(code: CurrencyCode): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, code);
+  } catch {
+    /* приватный режим и т.п. — просто не запоминаем */
+  }
+}

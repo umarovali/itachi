@@ -1,0 +1,17 @@
+// Порядок как в исходном дизайне: база → компоненты → страницы → улучшения.
+@use "./base/theme";
+@use "./base/global";
+
+@use "../components/ProductCard";
+@use "../components/Stepper";
+@use "../components/Embers";
+@use "../components/SharinganLogo";
+@use "../components/SiteHeader";
+@use "../components/CurrencySwitcher";
+@use "../components/GameCard";
+@use "../components/GameStore";
+@use "../components/Checkout";
+@use "../components/Footer";
+@use "../pages/Home/Home";
+
+@use "./enhancements";

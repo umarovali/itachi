@@ -1,0 +1,50 @@
+@use "../styles/abstracts/variables" as v;
+
+.site-header {
+  position: sticky; top: 10px; z-index: 50;
+  margin: 10px 0 6px;
+  padding: 12px 14px 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border: 1px solid v.$line; border-radius: 22px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(213,34,53,.14), transparent 55%),
+    rgba(18,11,14,.72);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 14px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04);
+
+  // тонкая алая линия сверху
+  &::before {
+    content: ""; position: absolute; top: -1px; left: 12%; right: 12%; height: 1px;
+    background: linear-gradient(90deg, transparent, v.$crimson, transparent);
+    opacity: .8; pointer-events: none;
+  }
+
+  &__brand { display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; cursor: pointer; }
+  &__logo {
+    width: 40px; height: 40px; display: grid; place-items: center;
+    border: 1px solid v.$crimson; border-radius: 13px; color: #fff;
+    font-family: v.$font-display; font-weight: 800;
+    background: linear-gradient(145deg, rgba(213,34,53,.55), rgba(213,34,53,.12));
+    box-shadow: 0 0 26px rgba(213,34,53,.3);
+  }
+  &__wordmark { font-family: v.$font-display; font-weight: 800; font-size: 16px; letter-spacing: .04em; color: v.$ink; b { color: v.$crimson; } }
+
+  &__accounts {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    padding: 10px 18px; border-radius: 999px; border: 0;
+    color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
+    background: linear-gradient(135deg, v.$crimson, v.$ember);
+    box-shadow: 0 8px 22px rgba(213,34,53,.35);
+    transition: transform .2s, box-shadow .2s, filter .2s;
+    &:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 12px 28px rgba(213,34,53,.45); }
+  }
+
+
+  @media (max-width: 560px) {
+    top: 6px; padding: 10px 10px 10px 12px; border-radius: 18px;
+    &__wordmark { font-size: 14px; }
+    &__logo { width: 34px; height: 34px; border-radius: 11px; }
+    &__accounts { padding: 9px 13px; font-size: 11px; }
+  }
+}
