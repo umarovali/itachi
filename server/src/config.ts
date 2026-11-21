@@ -21,6 +21,8 @@ export const config = {
   telegram: {
     token: str("TELEGRAM_BOT_TOKEN"),
   },
+  /** Telegram ID владельца — суперадмин назначается автоматически, без /claim. */
+  superadminTgId: num("SUPERADMIN_TG_ID", 0),
 
   defaultMarkupPercent: num("MARKUP_PERCENT", 10),
   orderTtlMinutes: num("ORDER_TTL_MINUTES", 30),

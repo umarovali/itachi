@@ -7,6 +7,7 @@
  * владелец отправляет боту `/claim КОД`. Пока суперадмин есть — код не создаётся.
  */
 import { randomInt } from "node:crypto";
+import { config } from "./config.ts";
 import { db, nowIso } from "./db.ts";
 import { log } from "./log.ts";
 
@@ -47,6 +48,13 @@ let claimCode: string | null = null;
 
 /** Вызывается при старте: если суперадмина нет — печатаем одноразовый код. */
 export function prepareClaimCode(): void {
+  // SUPERADMIN_TG_ID в настройках — суперадмин назначается сам (удобно, если база может обнулиться).
+  if (!getSuperadmin() && config.superadminTgId) {
+    db.prepare(
+      "INSERT INTO admins (tg_id, role, name, added_by, created_at) VALUES (?, 'superadmin', 'owner', NULL, ?) ON CONFLICT(tg_id) DO UPDATE SET role = 'superadmin'",
+    ).run(config.superadminTgId, nowIso());
+    log.info(`Суперадмин назначен из SUPERADMIN_TG_ID: ${config.superadminTgId}`);
+  }
   if (getSuperadmin()) {
     claimCode = null;
     return;
