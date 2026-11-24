@@ -15,9 +15,8 @@ export default function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
 
   const start = async () => {
     setState({ kind: "starting" });
-    // Окно открываем сразу (по клику), иначе браузер заблокирует всплывающее окно.
     const tab = window.open("about:blank", "_blank");
-    if (tab) tab.opener = null; // открытая страница не получит доступа к админке
+    if (tab) tab.opener = null;
     try {
       const { requestId, botUrl } = await api.loginStart();
       if (tab) tab.location.href = botUrl;
@@ -33,9 +32,7 @@ export default function Login({ onLoggedIn }: { onLoggedIn: () => void }) {
             window.clearInterval(timer.current);
             setState({ kind: "error", message: status === "rejected" ? "Вход отклонён в Telegram." : "Время на вход истекло. Попробуй ещё раз." });
           }
-        } catch {
-          /* временная ошибка сети — пробуем дальше */
-        }
+        } catch {}
       }, 2000);
     } catch (e) {
       tab?.close();

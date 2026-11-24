@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Game } from "../data/games";
-import { PAYMENT_METHODS } from "../data/payment-methods";
+import { PAY_LINK, PAY_METHOD_ID } from "../data/payment-methods";
 import { clearActiveOrder, loadActiveOrder, saveActiveOrder } from "../lib/active-order";
 import { api, type Order, type Product } from "../lib/api";
 import { CURRENCIES, PAY_CURRENCY, formatMoney } from "../lib/currency";
@@ -52,14 +52,12 @@ export default function GameStore({ game }: { game: Game }) {
   const [validation, setValidation] = useState<Validation>({ state: "idle" });
   const [step, setStep] = useState(1);
   const [order, setOrder] = useState<Order | null>(null);
-  const [method, setMethod] = useState(PAYMENT_METHODS[0].id);
   const [senderName, setSenderName] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
 
   const countdown = useCountdown(step === 2 ? order?.expiresAt : undefined);
 
-  // Другая игра — сбрасываем форму; если для неё есть незавершённый заказ — восстанавливаем.
   useEffect(() => {
     resetForm();
     const savedId = loadActiveOrder(game.slug);
@@ -147,12 +145,12 @@ export default function GameStore({ game }: { game: Game }) {
 
   const confirmPaid = async () => {
     if (!order) return;
-    if (!order.hasReceipt) return setStatus("Прикрепи скриншот оплаты (чек).");
+    if (!order.hasReceipt) return setStatus("Прикрепи чек оплаты (скриншот или PDF).");
     if (senderName.trim().length < 2) return setStatus("Укажи имя отправителя — так мы быстрее найдём твой перевод.");
     setStatus("");
     setBusy(true);
     try {
-      setOrder(await api.markPaid(order.id, senderName.trim(), method));
+      setOrder(await api.markPaid(order.id, senderName.trim(), PAY_METHOD_ID));
       setStep(3);
     } catch (e) {
       setStatus((e as Error).message);
@@ -185,7 +183,6 @@ export default function GameStore({ game }: { game: Game }) {
     setStatus("");
   }
 
-  const paymentMethod = PAYMENT_METHODS.find((m) => m.id === method) ?? PAYMENT_METHODS[0];
   const foreign = currency !== PAY_CURRENCY;
 
   return (
@@ -196,7 +193,7 @@ export default function GameStore({ game }: { game: Game }) {
           <h1>
             Пополнение <span>{game.title}</span>
           </h1>
-          <p>{game.description} Выбери пакет, введи данные игрока и оплати по QR.</p>
+          <p>{game.description} Выбери пакет, введи данные игрока и оплати через свой банк.</p>
         </div>
         <div className="game-store__emblem">
           <SharinganLogo size={210} />
@@ -333,11 +330,11 @@ export default function GameStore({ game }: { game: Game }) {
 
         {step === 2 && order && (
           <div className="payment-box">
-            <p>Переведи точную сумму по QR, прикрепи скриншот перевода и нажми «Я оплатил».</p>
+            <p>Нажми «Оплатить», выбери свой банк, введи точную сумму и переведи. Потом прикрепи скриншот или PDF чека и нажми «Я оплатил».</p>
             <div className="payment-box__amount">{formatMoney(order.amount, PAY_CURRENCY)}</div>
             {foreign && <div className="payment-box__approx">{display(order.amount)}</div>}
             <div className="payment-box__notice">
-              <b>Сумма должна быть точно такой — до сома.</b> По ней мы находим твой перевод.
+              <b>Переведи ровно эту сумму</b>, иначе заказ придётся уточнять.
               {foreign && (
                 <>
                   {" "}
@@ -347,21 +344,10 @@ export default function GameStore({ game }: { game: Game }) {
               )}
             </div>
 
-            <div className="payment-method" role="tablist" aria-label="Способ оплаты">
-              {PAYMENT_METHODS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={method === m.id}
-                  className={`payment-method__option ${method === m.id ? "payment-method__option--active" : ""}`}
-                  onClick={() => setMethod(m.id)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <img className="payment-box__qr" src={paymentMethod.qr} alt={`QR для оплаты через ${paymentMethod.label}`} />
+            <a className="btn btn--primary payment-box__pay" href={PAY_LINK} target="_blank" rel="noreferrer">
+              Оплатить {formatMoney(order.amount, PAY_CURRENCY)}
+            </a>
+            <small className="payment-box__hint">Откроется выбор банка — реквизиты уже подставлены, останется ввести сумму.</small>
 
             {countdown && (
               <div className={`payment-box__timer ${countdown.expired ? "payment-box__timer--expired" : ""}`}>

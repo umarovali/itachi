@@ -1,10 +1,3 @@
-/**
- * Клиент партнёрского API Donix.
- *
- * Формат запросов/ответов взят со страницы donix.org/api (кратко). Точные названия полей
- * ПРОВЕРЬТЕ по документации в кабинете — разбор ответов сделан «мягко» и принимает
- * несколько вариантов названий, но запросы (validate/order) могут потребовать правки.
- */
 import { config } from "./config.ts";
 import { DonixError } from "./donix-error.ts";
 import { mockDonix } from "./donix-mock.ts";
@@ -62,7 +55,6 @@ const pickNum = (o: Json, ...keys: string[]): number | undefined => {
   }
   return undefined;
 };
-/** Ответ может быть {data: …}, {products: […]} или сразу массивом. */
 const unwrap = (v: unknown): unknown => {
   const o = asObj(v);
   return o.data !== undefined ? o.data : v;

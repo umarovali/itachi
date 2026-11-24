@@ -1,13 +1,7 @@
-/**
- * Игры, которые продаёт сайт, и как распознать их товары в каталоге Donix.
- * Должно совпадать со slug'ами в web/src/data/games.ts.
- */
 export interface GameDef {
   slug: string;
   title: string;
-  /** Начала SKU в Donix, по которым товар относится к игре (сверить с /products). */
   skuPrefixes: string[];
-  /** Ключи полей, которые сайт присылает для игрока. */
   fields: string[];
 }
 
@@ -25,5 +19,6 @@ export const gameBySlug = (slug: string): GameDef | undefined => GAMES.find((g) 
 export function gameForSku(sku: string, donixGame?: string): GameDef | undefined {
   const s = sku.toLowerCase();
   const g = (donixGame ?? "").toLowerCase().replace(/[\s_]/g, "-");
-  return GAMES.find((def) => def.slug === g || def.skuPrefixes.some((p) => s.startsWith(p)));
+  const norm = (t: string) => t.toLowerCase().replace(/[\s_]/g, "-");
+  return GAMES.find((def) => def.slug === g || norm(def.title) === g || def.skuPrefixes.some((p) => s.startsWith(p)));
 }

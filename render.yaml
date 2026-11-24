@@ -30,7 +30,7 @@ services:
       - key: DONIX_WEBHOOK_SECRET
         sync: false
       - key: DONIX_BASE_URL
-        value: https://donix.org/api/partner/v1
+        value: https://back.donix.org/api/partner/v1
       - key: MARKUP_PERCENT
         value: "10"
       - key: ORDER_TTL_MINUTES

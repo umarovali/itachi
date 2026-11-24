@@ -1,13 +1,10 @@
 import type { CurrencyCode, Rates } from "./currency";
 
-/** Связь сайта с сервером (server/). В разработке Vite проксирует /api → http://localhost:3000. */
-
 export interface Product {
   sku: string;
   game: string;
   name: string;
   type: string;
-  /** Цена в сомах — считает сервер. */
   priceKgs: number;
   note?: string;
 }
@@ -38,7 +35,6 @@ export interface CreateOrderInput {
   promoCode?: string;
 }
 
-/** Статус для покупателя. */
 export type OrderStatus = "awaiting_payment" | "payment_check" | "processing" | "completed" | "problem" | "refunded" | "rejected" | "expired";
 
 export interface Order {
@@ -48,7 +44,6 @@ export interface Order {
   productName: string;
   fields: Record<string, string>;
   nickname: string | null;
-  /** Точная сумма к оплате в сомах (может быть на 1–2 сома больше цены — уникальная сумма). */
   amount: number;
   basePrice: number;
   discountPercent: number;

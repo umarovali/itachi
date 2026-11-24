@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Me } from "./api";
 import Login from "./pages/Login";
 import Orders from "./pages/Orders";
+import Promos from "./pages/Promos";
 
 export default function App() {
   const [me, setMe] = useState<Me | null>(null);
   const [state, setState] = useState<"loading" | "guest" | "in" | "offline">("loading");
+  const [page, setPage] = useState<"orders" | "promos">("orders");
 
   const check = useCallback(() => {
     api
@@ -46,9 +48,13 @@ export default function App() {
           </span>
         </div>
         <nav className="topbar__nav" aria-label="Разделы">
-          <span className="topbar__link topbar__link--active">Заказы</span>
+          <button type="button" className={`topbar__link ${page === "orders" ? "topbar__link--active" : ""}`} onClick={() => setPage("orders")}>
+            Заказы
+          </button>
           <span className="topbar__link topbar__link--soon" title="Скоро">Товары</span>
-          <span className="topbar__link topbar__link--soon" title="Скоро">Промокоды</span>
+          <button type="button" className={`topbar__link ${page === "promos" ? "topbar__link--active" : ""}`} onClick={() => setPage("promos")}>
+            Промокоды
+          </button>
           {me.role === "superadmin" && <span className="topbar__link topbar__link--soon" title="Скоро">Админы</span>}
         </nav>
         <div className="topbar__me">
@@ -60,7 +66,7 @@ export default function App() {
         </div>
       </header>
       <main className="content">
-        <Orders onUnauthorized={() => setState("guest")} />
+        {page === "orders" ? <Orders onUnauthorized={() => setState("guest")} /> : <Promos onUnauthorized={() => setState("guest")} />}
       </main>
     </div>
   );

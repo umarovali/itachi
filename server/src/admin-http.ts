@@ -1,10 +1,9 @@
-/** API админки: /api/admin/... (только для вошедших админов). */
 import { createReadStream, existsSync } from "node:fs";
 import express, { type NextFunction, type Request, type Response, type Router } from "express";
 import type { Admin } from "./admins.ts";
 import { destroySession, pollLogin, SESSION_COOKIE, SESSION_DAYS, sessionAdmin, startLogin } from "./auth.ts";
 import { getBotUsername } from "./bot.ts";
-import { getMarkupPercent } from "./catalog.ts";
+import { getMarkupPercent, setMarkupPercent } from "./catalog.ts";
 import { config } from "./config.ts";
 import { db } from "./db.ts";
 import { donix } from "./donix.ts";
@@ -14,12 +13,15 @@ import {
   confirmPayment,
   getOrder,
   markCustomerRefunded,
+  RECEIPT_MIME,
   receiptFile,
   rejectPayment,
   sendToDonix,
   UserError,
   type OrderStatus,
+  type ReceiptExt,
 } from "./orders.ts";
+import { deletePromo, getPromo, listPromos, savePromo, setPromoActive } from "./promos.ts";
 import { getRates } from "./rates.ts";
 
 declare module "express-serve-static-core" {
@@ -47,7 +49,6 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-/** Простая защита от CSRF: изменяющие запросы должны идти с JSON (браузерные формы так не умеют). */
 function requireJson(req: Request, res: Response, next: NextFunction) {
   if (req.method !== "GET" && !req.is("application/json")) return res.status(415).json({ error: "JSON only" });
   next();
@@ -65,7 +66,6 @@ export function adminRouter(): Router {
   const r = express.Router();
   r.use(requireJson);
 
-  // ---------------- вход
   const loginHits = new Map<string, number[]>();
   r.post("/auth/start", (req, res) => {
     const botUsername = getBotUsername();
@@ -94,7 +94,6 @@ export function adminRouter(): Router {
     res.json({ ok: true });
   });
 
-  // ---------------- всё ниже — только для админов
   r.use(requireAdmin);
 
   r.get("/auth/me", (req, res) => {
@@ -126,6 +125,36 @@ export function adminRouter(): Router {
     }),
   );
 
+  r.post("/markup", (req, res) => {
+    const v = Number(String(req.body?.percent ?? "").replace(",", "."));
+    if (!Number.isFinite(v) || v < 0 || v > 300) throw new UserError("Наценка должна быть от 0 до 300%");
+    const percent = Math.round(v * 100) / 100;
+    setMarkupPercent(percent);
+    log.info(`markup → ${percent}% by admin ${req.admin!.tg_id} (web)`);
+    res.json({ markupPercent: percent });
+  });
+
+  r.get("/promos", (_req, res) => res.json(listPromos()));
+
+  r.post("/promos", (req, res) => {
+    const b = req.body ?? {};
+    const maxUses = b.maxUses === null || b.maxUses === undefined || b.maxUses === "" ? null : Number(b.maxUses);
+    const p = savePromo({ code: String(b.code ?? ""), percent: Number(String(b.percent ?? "").replace(",", ".")), maxUses });
+    log.info(`promo ${p.code} saved (−${p.percent}%) by admin ${req.admin!.tg_id} (web)`);
+    res.json(p);
+  });
+
+  r.post("/promos/:code/active", (req, res) => {
+    if (!setPromoActive(req.params.code, Boolean(req.body?.active))) throw new UserError("Промокод не найден", 404);
+    res.json(getPromo(req.params.code));
+  });
+
+  r.post("/promos/:code/delete", (req, res) => {
+    if (!deletePromo(req.params.code)) throw new UserError("Промокод не найден", 404);
+    log.info(`promo ${req.params.code} deleted by admin ${req.admin!.tg_id} (web)`);
+    res.json({ ok: true });
+  });
+
   r.get("/orders", (req, res) => {
     const status = String(req.query.status ?? "");
     const q = String(req.query.q ?? "").trim().toUpperCase();
@@ -156,8 +185,9 @@ export function adminRouter(): Router {
     const o = getOrder(req.params.id);
     const file = o ? receiptFile(o) : null;
     if (!file || !existsSync(file)) return res.status(404).json({ error: "Чека нет" });
-    const ext = file.split(".").pop();
-    res.type(ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg");
+    const ext = file.split(".").pop() as ReceiptExt;
+    res.type(RECEIPT_MIME[ext] ?? "image/jpeg");
+    if (ext === "pdf") res.set("Content-Disposition", `inline; filename="receipt-${o!.id}.pdf"`);
     res.set("Cache-Control", "private, max-age=3600");
     res.set("X-Content-Type-Options", "nosniff");
     createReadStream(file).pipe(res);

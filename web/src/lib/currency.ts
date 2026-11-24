@@ -2,11 +2,8 @@ export type CurrencyCode = "KGS" | "RUB" | "KZT" | "UZS";
 
 export interface CurrencyInfo {
   code: CurrencyCode;
-  /** Короткое обозначение после суммы: «95 сом», «120 ₽». */
   symbol: string;
-  /** Название в переключателе. */
   name: string;
-  /** До какого шага округляем цену вверх: 1 → 95, 10 → 1 240, 100 → 14 300. */
   roundStep: number;
 }
 
@@ -20,23 +17,16 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
 export const CURRENCY_LIST = Object.values(CURRENCIES);
 export const DEFAULT_CURRENCY: CurrencyCode = "KGS";
 
-/** Сколько единиц валюты стоит 1 USD. */
 export type Rates = Record<CurrencyCode, number>;
 
-/**
- * Валюта, в которой реально принимается оплата (O!Bank / Элкарт).
- * Покупатели из других стран платят в сомах — их банк сам конвертирует по своему курсу.
- */
 export const PAY_CURRENCY: CurrencyCode = "KGS";
 
-/** Примерная сумма в валюте покупателя — только для показа, платят всё равно в сомах. */
 export function somToDisplay(som: number, code: CurrencyCode, rates: Rates): number {
   if (code === PAY_CURRENCY) return som;
   const step = CURRENCIES[code].roundStep;
   return Math.round((som / rates.KGS) * rates[code] / step) * step;
 }
 
-/** «95 сом» или «≈ 1 240 ₸». */
 export function formatDisplay(som: number, code: CurrencyCode, rates: Rates): string {
   const text = formatMoney(somToDisplay(som, code, rates), code);
   return code === PAY_CURRENCY ? text : `≈ ${text}`;
@@ -62,10 +52,6 @@ const TZ_PREFIX_TO_CURRENCY: Array<[string[], CurrencyCode]> = [
   ],
 ];
 
-/**
- * Угадываем валюту по часовому поясу устройства — без запроса геолокации.
- * Если не узнали страну — сом.
- */
 export function detectCurrency(): CurrencyCode {
   let tz = "";
   try {
@@ -93,7 +79,5 @@ export function loadSavedCurrency(): CurrencyCode | null {
 export function saveCurrency(code: CurrencyCode): void {
   try {
     localStorage.setItem(STORAGE_KEY, code);
-  } catch {
-    /* приватный режим и т.п. — просто не запоминаем */
-  }
+  } catch {}
 }

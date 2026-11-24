@@ -6,6 +6,15 @@ export interface Me {
   role: Role;
 }
 
+export interface Promo {
+  code: string;
+  percent: number;
+  maxUses: number | null;
+  used: number;
+  active: boolean;
+  createdAt: string;
+}
+
 export type RawStatus =
   | "awaiting_payment"
   | "payment_check"
@@ -39,6 +48,7 @@ export interface AdminOrder {
   donixOrderId: string | null;
   error: string | null;
   hasReceipt: boolean;
+  receiptKind: "image" | "pdf" | null;
   createdAt: string;
   expiresAt: string;
   paidAt: string | null;
@@ -88,5 +98,10 @@ export const api = {
   summary: () => request<Summary>("/summary"),
   orders: (status: string, q: string) => request<AdminOrder[]>(`/orders?status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`),
   action: (id: string, action: "confirm" | "reject" | "retry" | "refund") => request<AdminOrder>(`/orders/${encodeURIComponent(id)}/${action}`, {}),
+  promos: () => request<Promo[]>("/promos"),
+  savePromo: (p: { code: string; percent: number; maxUses: number | null }) => request<Promo>("/promos", p),
+  setPromoActive: (code: string, active: boolean) => request<Promo>(`/promos/${encodeURIComponent(code)}/active`, { active }),
+  deletePromo: (code: string) => request<{ ok: true }>(`/promos/${encodeURIComponent(code)}/delete`, {}),
+  setMarkup: (percent: number) => request<{ markupPercent: number }>("/markup", { percent }),
   receiptUrl: (id: string) => `/api/admin/orders/${encodeURIComponent(id)}/receipt`,
 };

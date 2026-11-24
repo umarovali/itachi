@@ -1,12 +1,9 @@
-/** Запоминаем текущий заказ, чтобы после перезагрузки страницы не потерять оплату. */
 const KEY = "itachi.activeOrder";
 
 export function saveActiveOrder(game: string, id: string): void {
   try {
     localStorage.setItem(KEY, JSON.stringify({ game, id }));
-  } catch {
-    /* без хранилища просто не восстанавливаем */
-  }
+  } catch {}
 }
 
 export function loadActiveOrder(game: string): string | null {
@@ -21,7 +18,5 @@ export function loadActiveOrder(game: string): string | null {
 export function clearActiveOrder(): void {
   try {
     localStorage.removeItem(KEY);
-  } catch {
-    /* ничего */
-  }
+  } catch {}
 }

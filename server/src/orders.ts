@@ -1,14 +1,3 @@
-/**
- * Заказы: создание, уникальная сумма, подтверждение оплаты, отправка в Donix, статусы.
- *
- * Путь заказа:
- *   awaiting_payment ──(покупатель «Я оплатил»)──▶ payment_check
- *   payment_check ──(админ ✅)──▶ confirmed ──▶ sending ──▶ processing ──(вебхук)──▶ completed
- *                                                                        └──────────▶ failed / refunded
- *   payment_check ──(админ ❌)──▶ rejected
- *   awaiting_payment ──(30 минут)──▶ expired
- *   failed / refunded ──(админ «Вернул деньги»)──▶ customer_refunded
- */
 import { randomInt } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { mkdirSync, unlinkSync, writeFileSync } from "node:fs";
@@ -51,7 +40,6 @@ export interface Order {
   cost_usd: number;
   sender_name: string | null;
   pay_method: string | null;
-  /** Файл скриншота оплаты (внутри data/receipts), никогда не отдаётся публично. */
   receipt_path: string | null;
   donix_order_id: string | null;
   error: string | null;
@@ -64,7 +52,6 @@ export interface Order {
   finished_at: string | null;
 }
 
-/** Ошибка, текст которой можно показать покупателю. */
 export class UserError extends Error {
   readonly status: number;
   constructor(message: string, status = 400) {
@@ -73,7 +60,6 @@ export class UserError extends Error {
   }
 }
 
-/** Что произошло с заказом — на это подписан Telegram-бот. */
 export type OrderEvent =
   | { kind: "paid"; order: Order }
   | { kind: "changed"; order: Order }
@@ -81,8 +67,6 @@ export type OrderEvent =
 
 export const orderEvents = new EventEmitter<{ event: [OrderEvent] }>();
 const emit = (e: OrderEvent) => orderEvents.emit("event", e);
-
-// ---------------------------------------------------------------- чтение
 
 type Row = Omit<Order, "fields" | "tg_messages"> & { fields: string; tg_messages: string };
 const fromRow = (r: Row): Order => ({ ...r, fields: JSON.parse(r.fields), tg_messages: JSON.parse(r.tg_messages) });
@@ -101,7 +85,6 @@ export function saveTgMessages(id: string, messages: Order["tg_messages"]): void
   db.prepare("UPDATE orders SET tg_messages = ? WHERE id = ?").run(JSON.stringify(messages), id);
 }
 
-/** Сменить статус, только если заказ сейчас в одном из `from`. Возвращает обновлённый заказ или undefined. */
 function transition(id: string, from: OrderStatus[], to: OrderStatus, extra: Record<string, string | number | null> = {}): Order | undefined {
   const sets = ["status = ?", ...Object.keys(extra).map((k) => `${k} = ?`)].join(", ");
   const marks = from.map(() => "?").join(",");
@@ -109,13 +92,8 @@ function transition(id: string, from: OrderStatus[], to: OrderStatus, extra: Rec
   return res.changes ? getOrder(id) : undefined;
 }
 
-// ---------------------------------------------------------------- создание
-
-const ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // без 0/O, 1/I
+const ID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const newId = () => Array.from({ length: 6 }, () => ID_ALPHABET[randomInt(ID_ALPHABET.length)]).join("");
-
-const ACTIVE_FOR_AMOUNT: OrderStatus[] = ["awaiting_payment", "payment_check"];
-const MAX_AMOUNT_SHIFT = 30;
 
 export interface CreateOrderInput {
   game: string;
@@ -150,7 +128,6 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   if (!/^@[A-Za-z0-9_]{5,32}$/.test(telegram)) throw new UserError("Укажи Telegram в формате @username");
   const displayCurrency = (CURRENCY_CODES as readonly string[]).includes(input.displayCurrency) ? (input.displayCurrency as CurrencyCode) : "KGS";
 
-  // Проверяем ID ещё раз на сервере — браузеру не доверяем.
   const check = await donix.validate(product.sku, fields.uid, fields.server);
   if (!check.ok) throw new UserError("Игровой ID не прошёл проверку. Проверь, правильно ли он введён.");
 
@@ -163,24 +140,9 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const discounted = Math.max(1, Math.round(base * (1 - discountPercent / 100)));
   const now = new Date();
 
-  const order = tx(() => {
-    // Уникальная сумма: base, base+1, base+2 … — первая, которая не занята активным заказом.
-    const taken = new Set(
-      (
-        db
-          .prepare(`SELECT amount FROM orders WHERE status IN (${ACTIVE_FOR_AMOUNT.map(() => "?").join(",")}) AND amount BETWEEN ? AND ?`)
-          .all(...ACTIVE_FOR_AMOUNT, discounted, discounted + MAX_AMOUNT_SHIFT) as { amount: number }[]
-      ).map((r) => r.amount),
-    );
-    let amount = -1;
-    for (let k = 0; k <= MAX_AMOUNT_SHIFT; k++) {
-      if (!taken.has(discounted + k)) {
-        amount = discounted + k;
-        break;
-      }
-    }
-    if (amount < 0) throw new UserError("Сейчас много заказов на этот товар. Попробуй через пару минут.", 503);
+  const amount = discounted;
 
+  const order = tx(() => {
     let id = newId();
     while (db.prepare("SELECT 1 FROM orders WHERE id = ?").get(id)) id = newId();
 
@@ -198,35 +160,39 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   return order;
 }
 
-// ---------------------------------------------------------------- покупатель
-
 export const RECEIPTS_DIR = join(dirname(config.dbPath), "receipts");
 mkdirSync(RECEIPTS_DIR, { recursive: true });
 
-/** Определяем тип картинки по первым байтам — расширению и Content-Type не доверяем. */
-export function detectImage(buf: Buffer): "jpg" | "png" | "webp" | null {
+export type ReceiptExt = "jpg" | "png" | "webp" | "pdf";
+
+export function detectReceipt(buf: Buffer): ReceiptExt | null {
   if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
   if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
   if (buf.length > 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "webp";
+  if (buf.length > 5 && buf.toString("ascii", 0, 5) === "%PDF-") return "pdf";
   return null;
 }
 
-/** Покупатель прикрепил скриншот оплаты (можно заменить, пока заказ ждёт оплату). */
-export function attachReceipt(id: string, image: Buffer): Order {
+export const RECEIPT_MIME: Record<ReceiptExt, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  pdf: "application/pdf",
+};
+
+export function attachReceipt(id: string, data: Buffer): Order {
   const order = getOrder(id);
   if (!order) throw new UserError("Заказ не найден", 404);
   if (order.status !== "awaiting_payment") throw new UserError("К этому заказу уже нельзя прикрепить чек");
-  const ext = detectImage(image);
-  if (!ext) throw new UserError("Это не картинка. Прикрепи скриншот в формате JPG или PNG.");
+  const ext = detectReceipt(data);
+  if (!ext) throw new UserError("Прикрепи чек: скриншот (JPG/PNG) или PDF из банка.");
   const file = `${order.id}-${Date.now()}.${ext}`;
-  writeFileSync(join(RECEIPTS_DIR, file), image);
+  writeFileSync(join(RECEIPTS_DIR, file), data);
   db.prepare("UPDATE orders SET receipt_path = ? WHERE id = ?").run(file, id);
   if (order.receipt_path) {
     try {
       unlinkSync(join(RECEIPTS_DIR, order.receipt_path));
-    } catch {
-      /* старого файла уже нет */
-    }
+    } catch {}
   }
   return getOrder(id)!;
 }
@@ -238,10 +204,10 @@ export function receiptFile(o: Order): string | null {
 export function markPaid(id: string, senderName: string, method: string): Order {
   const order = getOrder(id);
   if (!order) throw new UserError("Заказ не найден", 404);
-  if (order.status === "payment_check") return order; // повторное нажатие
+  if (order.status === "payment_check") return order;
   if (order.status !== "awaiting_payment") throw new UserError("Этот заказ уже нельзя оплатить. Оформи новый.");
   if (new Date(order.expires_at).getTime() < Date.now()) throw new UserError("Время на оплату истекло. Если ты уже перевёл деньги — напиши в поддержку.");
-  if (!order.receipt_path) throw new UserError("Прикрепи скриншот оплаты (чек).");
+  if (!order.receipt_path) throw new UserError("Прикрепи чек оплаты (скриншот или PDF).");
   const updated = transition(id, ["awaiting_payment"], "payment_check", {
     sender_name: senderName.trim().slice(0, 60),
     pay_method: method.slice(0, 20),
@@ -258,22 +224,18 @@ export function cancelByCustomer(id: string): Order | undefined {
   return updated;
 }
 
-// ---------------------------------------------------------------- админ
-
-/** Админ: «✅ Деньги пришли». Можно и для заказа, который истёк или был отклонён по ошибке. */
 export async function confirmPayment(id: string): Promise<Order> {
   const order = transition(id, ["awaiting_payment", "payment_check", "expired", "rejected"], "confirmed", { confirmed_at: nowIso(), error: null });
   if (!order) {
     const cur = getOrder(id);
     if (!cur) throw new UserError("Заказ не найден", 404);
-    return cur; // уже подтверждён — повторное нажатие
+    return cur;
   }
   if (order.promo_code) db.prepare("UPDATE promo_codes SET used = used + 1 WHERE code = ?").run(order.promo_code);
   emit({ kind: "changed", order });
   return sendToDonix(id);
 }
 
-/** Админ: «❌ Не пришли». */
 export function rejectPayment(id: string): Order {
   const order = transition(id, ["awaiting_payment", "payment_check", "expired"], "rejected", { finished_at: nowIso() });
   const result = order ?? getOrder(id);
@@ -282,7 +244,6 @@ export function rejectPayment(id: string): Order {
   return result;
 }
 
-/** Отправить оплаченный заказ в Donix (или повторить после ошибки). */
 export async function sendToDonix(id: string): Promise<Order> {
   const order = transition(id, ["confirmed", "failed", "refunded"], "sending", { error: null });
   if (!order) return getOrder(id)!;
@@ -303,7 +264,6 @@ export async function sendToDonix(id: string): Promise<Order> {
   }
 }
 
-/** Админ: «💸 Вернул деньги покупателю». */
 export function markCustomerRefunded(id: string): Order {
   const order = transition(id, ["failed", "refunded", "confirmed"], "customer_refunded", { finished_at: nowIso() });
   const result = order ?? getOrder(id);
@@ -311,8 +271,6 @@ export function markCustomerRefunded(id: string): Order {
   if (order) emit({ kind: "changed", order });
   return result;
 }
-
-// ---------------------------------------------------------------- Donix → мы
 
 export function applyDonixStatus(input: { externalId?: string; donixOrderId?: string; status: DonixOrderStatus; priceUsd?: number }): Order | undefined {
   const order = input.externalId ? getOrder(input.externalId) : undefined;
@@ -324,7 +282,6 @@ export function applyDonixStatus(input: { externalId?: string; donixOrderId?: st
     return undefined;
   }
   if (input.status === "processing") return getOrder(target.id);
-  // completed/failed — только из «в работе»; refunded может прийти и после completed/failed.
   const from: OrderStatus[] = input.status === "refunded" ? ["processing", "sending", "completed", "failed"] : ["processing", "sending"];
   const updated = transition(target.id, from, input.status, {
     finished_at: nowIso(),
@@ -337,9 +294,6 @@ export function applyDonixStatus(input: { externalId?: string; donixOrderId?: st
   return updated ?? getOrder(target.id);
 }
 
-// ---------------------------------------------------------------- фоновые задачи
-
-/** Неоплаченные заказы старше 30 минут → expired (сумма освобождается). */
 export function expireOrders(): void {
   const rows = db.prepare("SELECT id FROM orders WHERE status = 'awaiting_payment' AND expires_at < ?").all(nowIso()) as { id: string }[];
   for (const { id } of rows) {
@@ -348,7 +302,6 @@ export function expireOrders(): void {
   }
 }
 
-/** Заказы, которые админ не проверил за 10 минут — напомнить один раз. */
 export function ordersNeedingReminder(): Order[] {
   const before = new Date(Date.now() - 10 * 60_000).toISOString();
   const rows = (db.prepare("SELECT * FROM orders WHERE status = 'payment_check' AND reminded = 0 AND paid_at < ?").all(before) as unknown as Row[]).map(fromRow);
@@ -356,7 +309,6 @@ export function ordersNeedingReminder(): Order[] {
   return rows;
 }
 
-/** Запасной путь, если вебхук не дошёл: спросить Donix о заказах, которые долго «в обработке». */
 export async function pollStuckOrders(): Promise<void> {
   const before = new Date(Date.now() - 3 * 60_000).toISOString();
   const rows = db.prepare("SELECT id, donix_order_id FROM orders WHERE status = 'processing' AND donix_order_id IS NOT NULL AND confirmed_at < ?").all(before) as {
@@ -373,8 +325,6 @@ export async function pollStuckOrders(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------- для сайта
-
 const PUBLIC_STATUS: Record<OrderStatus, string> = {
   awaiting_payment: "awaiting_payment",
   payment_check: "payment_check",
@@ -389,7 +339,6 @@ const PUBLIC_STATUS: Record<OrderStatus, string> = {
   expired: "expired",
 };
 
-/** То, что можно показать покупателю (без закупочной цены, ошибок Donix и т.п.). */
 export function publicOrder(o: Order) {
   return {
     id: o.id,
@@ -408,7 +357,6 @@ export function publicOrder(o: Order) {
   };
 }
 
-/** Полная информация для админки. */
 export function adminOrder(o: Order) {
   return {
     ...publicOrder(o),
@@ -424,5 +372,6 @@ export function adminOrder(o: Order) {
     paidAt: o.paid_at,
     confirmedAt: o.confirmed_at,
     finishedAt: o.finished_at,
+    receiptKind: o.receipt_path ? (o.receipt_path.endsWith(".pdf") ? "pdf" : "image") : null,
   };
 }

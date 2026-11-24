@@ -7,7 +7,7 @@ const formatReceiptDate = (d: Date) =>
   `${d.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" }).replace(/\s?г\.$/, "")} г. в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`;
 
 const STATUS_VIEW: Record<OrderStatus, { title: string; text: string; tone: "ok" | "wait" | "bad" }> = {
-  awaiting_payment: { title: "Ждём оплату", text: "Оплати заказ по QR и нажми «Я оплатил»", tone: "wait" },
+  awaiting_payment: { title: "Ждём оплату", text: "Оплати заказ, прикрепи чек и нажми «Я оплатил»", tone: "wait" },
   payment_check: { title: "Заявка отправлена", text: "Проверяем оплату — это займёт несколько минут", tone: "wait" },
   processing: { title: "Оплата подтверждена", text: "Пополняем аккаунт — обычно 1–5 минут", tone: "wait" },
   completed: { title: "Готово!", text: "Пополнение зачислено на аккаунт", tone: "ok" },
@@ -24,7 +24,6 @@ interface Props {
   onNew?: () => void;
 }
 
-/** Чек заказа с живым статусом (опрашивает сервер, пока заказ не завершён). */
 export default function OrderReceipt({ order: initial, onNew }: Props) {
   const [order, setOrder] = useState(initial);
   const game = findGame(order.game);

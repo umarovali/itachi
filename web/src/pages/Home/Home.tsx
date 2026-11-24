@@ -18,7 +18,7 @@ export default function Home() {
           </h1>
           <p>Один магазин для популярных игр. Выбирай игру, пакет и отправляй заявку — всё в одном понятном интерфейсе.</p>
           <div className="home__chips">
-            <span>O!Bank и Элкарт QR</span>
+            <span>Оплата из любого банка КР</span>
             <span>Сом · Рубль · Тенге · Сум</span>
             <span>24/7 приём</span>
           </div>
@@ -54,7 +54,7 @@ export default function Home() {
           </div>
           <div>
             <b>03</b>
-            <span>Оплати через QR</span>
+            <span>Оплати через свой банк</span>
           </div>
           <div>
             <b>04</b>

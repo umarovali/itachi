@@ -1,8 +1,3 @@
-/**
- * Внешний вид игр на сайте: цвет, иконка, какие поля просить у игрока.
- * Товары и цены сюда НЕ входят — они приходят с сервера (из каталога Donix).
- */
-
 export type Accent = "crimson" | "aqua" | "gold" | "emerald" | "amber" | "orange";
 
 export interface PlayerField {
@@ -18,7 +13,6 @@ export interface Game {
   description: string;
   accent: Accent;
   iconUrl: string;
-  /** Подписи групп товаров по типу (diamond, voucher …). */
   groupLabels: Record<string, string>;
   fields: PlayerField[];
 }
@@ -41,7 +35,7 @@ export const games: Game[] = [
     description: "UC для PUBG Mobile — быстрое пополнение по игровому ID.",
     accent: "amber",
     iconUrl: "https://play-lh.googleusercontent.com/upQsWd8PLFeUUjeR8Bhix73eTVSl1Vdijn8WEmq35Iouy3R0xQ_ewh1yJXOnX_0-_1Q%3Dw240-h480",
-    groupLabels: { uc: "UC", voucher: "Наборы и подписки" },
+    groupLabels: { uc: "UC", wow: "WOW Coins", voucher: "Наборы и подписки" },
     fields: [{ key: "uid", label: "UID PUBG Mobile", placeholder: "Например: 5123456789" }],
   },
   {

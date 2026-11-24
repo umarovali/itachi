@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import OrderReceipt from "../components/OrderReceipt";
 import { api, type Order } from "../lib/api";
 
-/** /order/ABC123 — статус заказа по номеру. */
 export default function OrderPage() {
   const { id = "" } = useParams();
   const [order, setOrder] = useState<Order | null>(null);

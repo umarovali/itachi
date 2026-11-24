@@ -10,9 +10,8 @@ export const config = {
 
   donix: {
     apiKey: str("DONIX_API_KEY"),
-    baseUrl: str("DONIX_BASE_URL", "https://donix.org/api/partner/v1").replace(/\/$/, ""),
+    baseUrl: str("DONIX_BASE_URL", "https://back.donix.org/api/partner/v1").replace(/\/$/, ""),
     webhookSecret: str("DONIX_WEBHOOK_SECRET"),
-    /** Нет ключа — работаем с тестовым Donix. */
     get mock(): boolean {
       return this.apiKey === "";
     },
@@ -21,12 +20,10 @@ export const config = {
   telegram: {
     token: str("TELEGRAM_BOT_TOKEN"),
   },
-  /** Telegram ID владельца — суперадмин назначается автоматически, без /claim. */
   superadminTgId: num("SUPERADMIN_TG_ID", 0),
 
   defaultMarkupPercent: num("MARKUP_PERCENT", 10),
   orderTtlMinutes: num("ORDER_TTL_MINUTES", 30),
   dbPath: str("DB_PATH", "data/itachi.db"),
-  /** Express "trust proxy": loopback (nginx на том же VPS), число хопов или true (Render). */
   trustProxy: ((v: string): boolean | number | string => (v === "true" ? true : /^\d+$/.test(v) ? Number(v) : v))(str("TRUST_PROXY", "loopback")),
 };

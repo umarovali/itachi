@@ -21,7 +21,6 @@ button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-// ---------------------------------------------------------------- кнопки
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 11px 16px; border-radius: 12px; border: 1px solid var(--line);
@@ -47,7 +46,6 @@ button { cursor: pointer; }
 
 .center-note { min-height: 100vh; display: grid; place-items: center; gap: 12px; color: var(--muted); text-align: center; padding: 16px; }
 
-// ---------------------------------------------------------------- вход
 .login {
   min-height: 100vh; display: grid; place-items: center; padding: 16px;
   &__card {
@@ -68,7 +66,6 @@ button { cursor: pointer; }
   &__error { color: var(--ember); }
 }
 
-// ---------------------------------------------------------------- каркас
 .shell { width: min(100% - 32px, 1280px); margin: 0 auto; padding-bottom: 40px; }
 .topbar {
   position: sticky; top: 10px; z-index: 20; margin: 10px 0 20px;
@@ -80,7 +77,8 @@ button { cursor: pointer; }
   &__wordmark { font-family: $display; font-weight: 800; font-size: 14px; letter-spacing: .04em; b { color: var(--crimson); } }
   &__nav { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
   &__link {
-    padding: 8px 12px; border-radius: 10px; color: var(--muted); font-weight: 600; white-space: nowrap;
+    padding: 8px 12px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-weight: 600; white-space: nowrap;
+    &:hover { color: var(--ink); }
     &--active { background: rgba(213,34,53,.16); color: var(--ink); }
     &--soon { opacity: .45; cursor: not-allowed; }
   }
@@ -89,7 +87,6 @@ button { cursor: pointer; }
   &__name { font-weight: 700; }
 }
 
-// ---------------------------------------------------------------- сводка
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
 .stat {
   padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg-panel);
@@ -100,7 +97,6 @@ button { cursor: pointer; }
   &--alert { border-color: rgba(255,123,66,.6); background: rgba(255,123,66,.08); b { color: var(--ember); } }
 }
 
-// ---------------------------------------------------------------- фильтры
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
 .tabs { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-panel); overflow-x: auto; max-width: 100%; }
 .tab {
@@ -117,7 +113,6 @@ button { cursor: pointer; }
 
 .note { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-panel); color: var(--muted); text-align: center; margin-bottom: 10px; &--bad { color: var(--ember); border-color: rgba(255,123,66,.45); text-align: left; } }
 
-// ---------------------------------------------------------------- список заказов
 .order-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .order-row {
   width: 100%; display: grid; grid-template-columns: 90px 1fr 110px 170px 110px; align-items: center; gap: 12px;
@@ -138,7 +133,6 @@ button { cursor: pointer; }
   &--muted { background: rgba(255,255,255,.05); color: var(--muted); }
 }
 
-// ---------------------------------------------------------------- подробности
 .details {
   margin: -4px 0 6px; padding: 18px; border: 1px solid var(--crimson); border-top: 0; border-radius: 0 0 14px 14px; background: var(--bg-panel-2);
   &__grid { display: grid; grid-template-columns: 1fr 260px; gap: 20px; }
@@ -162,7 +156,6 @@ button { cursor: pointer; }
   img { max-width: 100%; max-height: 100%; border-radius: 12px; }
 }
 
-// ---------------------------------------------------------------- адаптивность
 @media (max-width: 960px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .order-row { grid-template-columns: 80px 1fr auto; grid-template-areas: "id product amount" "status status time"; row-gap: 8px;
@@ -180,3 +173,41 @@ button { cursor: pointer; }
   .details__actions .btn { flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } .btn { transition: none; } }
+
+.markup {
+  align-self: flex-start; padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--muted); font-size: 11.5px; text-decoration: underline dotted; text-underline-offset: 3px;
+  &:hover { color: inherit; }
+  &--edit {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px; text-decoration: none; cursor: default;
+    input { width: 64px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 13px; }
+    button { padding: 2px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); cursor: pointer; }
+    button[type="submit"] { color: var(--ember); }
+  }
+  &__err { flex-basis: 100%; color: var(--ember) !important; }
+}
+
+.note--ok { color: #45d483; border-color: rgba(69,212,131,.4); text-align: left; }
+.promos { display: flex; flex-direction: column; gap: 14px; }
+.promo-form {
+  display: grid; grid-template-columns: 1.4fr 1fr 1.4fr auto; gap: 10px; align-items: end;
+  padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg-panel);
+  h2 { grid-column: 1 / -1; font-size: 16px; margin: 0; }
+  label { display: flex; flex-direction: column; gap: 6px; span { color: var(--muted); font-size: 12px; } }
+  input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); min-width: 0; }
+  input:focus-visible { outline: 2px solid var(--ember); outline-offset: 1px; }
+  small { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; }
+}
+.promo-list { display: flex; flex-direction: column; gap: 8px; }
+.promo-row {
+  display: grid; grid-template-columns: minmax(110px, 1.2fr) 70px 1.5fr auto auto; gap: 12px; align-items: center;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-panel);
+  &--off { opacity: .6; }
+  &__pct { font-weight: 800; color: var(--ember); }
+  &__uses { color: var(--muted); font-size: 13px; }
+  &__actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+}
+@media (max-width: 760px) {
+  .promo-form { grid-template-columns: 1fr 1fr; .btn { grid-column: 1 / -1; } input { font-size: 16px; } }
+  .promo-row { grid-template-columns: 1fr auto; &__uses { grid-column: 1 / -1; } &__actions { grid-column: 1 / -1; justify-content: flex-start; } }
+}

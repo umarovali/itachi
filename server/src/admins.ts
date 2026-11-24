@@ -1,11 +1,3 @@
-/**
- * Админы бота (и будущей админки).
- *  - superadmin — всегда РОВНО ОДИН (гарантирует уникальный индекс в базе). Добавляет/удаляет админов.
- *  - admin — подтверждает оплаты, смотрит заказы и статистику.
- *
- * Первый суперадмин назначается одноразовым кодом: сервер печатает его в консоль,
- * владелец отправляет боту `/claim КОД`. Пока суперадмин есть — код не создаётся.
- */
 import { randomInt } from "node:crypto";
 import { config } from "./config.ts";
 import { db, nowIso } from "./db.ts";
@@ -42,13 +34,9 @@ export const isAdmin = (tgId: number | undefined): boolean => getAdmin(tgId) !==
 export const isSuperadmin = (tgId: number | undefined): boolean => getAdmin(tgId)?.role === "superadmin";
 export const getSuperadmin = (): Admin | undefined => db.prepare("SELECT * FROM admins WHERE role = 'superadmin'").get() as Admin | undefined;
 
-// ---------------------------------------------------------------- первый суперадмин
-
 let claimCode: string | null = null;
 
-/** Вызывается при старте: если суперадмина нет — печатаем одноразовый код. */
 export function prepareClaimCode(): void {
-  // SUPERADMIN_TG_ID в настройках — суперадмин назначается сам (удобно, если база может обнулиться).
   if (!getSuperadmin() && config.superadminTgId) {
     db.prepare(
       "INSERT INTO admins (tg_id, role, name, added_by, created_at) VALUES (?, 'superadmin', 'owner', NULL, ?) ON CONFLICT(tg_id) DO UPDATE SET role = 'superadmin'",
@@ -71,14 +59,12 @@ export function claimSuperadmin(tgId: number, name: string, code: string): "ok" 
       "INSERT INTO admins (tg_id, role, name, added_by, created_at) VALUES (?, 'superadmin', ?, NULL, ?) ON CONFLICT(tg_id) DO UPDATE SET role = 'superadmin'",
     ).run(tgId, name, nowIso());
   } catch {
-    return "taken"; // уникальный индекс: суперадмин уже есть
+    return "taken";
   }
   claimCode = null;
   log.info(`Суперадмин назначен: ${name} (${tgId})`);
   return "ok";
 }
-
-// ---------------------------------------------------------------- управление (только суперадмин)
 
 export function addAdmin(byTgId: number, tgId: number, name: string | null): "ok" | "forbidden" | "exists" {
   if (!isSuperadmin(byTgId)) return "forbidden";

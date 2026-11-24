@@ -8,8 +8,6 @@
   -webkit-user-drag: none;
 }
 
-/* Умеренная, постоянная скорость вращения — одинаковая на десктопе,
-   на мобильных и при увеличении масштаба страницы. */
 .sharingan--spin {
   animation: sharingan-spin 12s linear infinite;
 }

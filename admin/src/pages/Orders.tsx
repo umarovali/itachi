@@ -69,6 +69,70 @@ const ACTIONS: Partial<Record<RawStatus, { action: Action; label: string; kind: 
   ],
 };
 
+function MarkupEditor({ value, onSaved }: { value: number; onSaved: (v: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const save = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api.setMarkup(Number(draft.replace(",", ".")));
+      onSaved(r.markupPercent);
+      setEditing(false);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing)
+    return (
+      <button
+        type="button"
+        className="markup"
+        onClick={() => {
+          setDraft(String(value));
+          setEditing(true);
+        }}
+        title="Изменить наценку"
+      >
+        наценка {value}% ✎
+      </button>
+    );
+
+  return (
+    <form
+      className="markup markup--edit"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <input
+        autoFocus
+        inputMode="decimal"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+        aria-label="Наценка в процентах"
+        disabled={busy}
+      />
+      <span>%</span>
+      <button type="submit" disabled={busy || !draft.trim()} aria-label="Сохранить">
+        ✓
+      </button>
+      <button type="button" onClick={() => setEditing(false)} disabled={busy} aria-label="Отмена">
+        ✕
+      </button>
+      {err && <small className="markup__err">{err}</small>}
+    </form>
+  );
+}
+
 export default function Orders({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [filter, setFilter] = useState("attention");
   const [query, setQuery] = useState("");
@@ -118,7 +182,7 @@ export default function Orders({ onUnauthorized }: { onUnauthorized: () => void 
           <div className="stat">
             <span>Прибыль сегодня</span>
             <b>≈ {som(summary.today.profit)}</b>
-            <small>наценка {summary.markupPercent}%</small>
+            <MarkupEditor value={summary.markupPercent} onSaved={(markupPercent) => setSummary((s) => (s ? { ...s, markupPercent } : s))} />
           </div>
           <div className={`stat ${attention ? "stat--alert" : ""}`}>
             <span>Требуют внимания</span>
@@ -253,14 +317,18 @@ function OrderDetails({ order: o, onChanged, onUnauthorized }: { order: AdminOrd
         </dl>
 
         <div className="details__receipt">
-          {o.hasReceipt ? (
+          {o.hasReceipt && o.receiptKind === "pdf" ? (
+            <a className="receipt receipt--empty" href={api.receiptUrl(o.id)} target="_blank" rel="noreferrer">
+              📄 Открыть PDF-чек
+            </a>
+          ) : o.hasReceipt ? (
             <button className="receipt" onClick={() => setZoom(true)} aria-label="Открыть чек крупно">
               <img src={api.receiptUrl(o.id)} alt={`Чек заказа ${o.id}`} loading="lazy" />
             </button>
           ) : (
             <div className="receipt receipt--empty">Чек не прикреплён</div>
           )}
-          <small>Сверь сумму {som(o.amount)} в банке — скриншот можно подделать.</small>
+          <small>Сверь сумму {som(o.amount)} в банке — чек можно подделать.</small>
         </div>
       </div>
 

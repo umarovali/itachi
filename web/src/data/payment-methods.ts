@@ -1,18 +1,4 @@
-import obankQr from "../assets/obank-qr.jpg";
-import elkartQr from "../assets/elkart-qr.jpg";
+export const PAY_LINK =
+  "https://pay.payqr.kg/qr/#00020101021132440012c2c.mbank.kg01020210129967022910101302125204999953034175909Firdavs%20M630405eb";
 
-export interface PaymentMethod {
-  id: string;
-  label: string;
-  qr: string;
-}
-
-/**
- * Куда покупатель платит. Оплата всегда в сомах; из других стран тоже можно —
- * банк покупателя сам конвертирует по своему курсу.
- * Позже это будет настраиваться в админке.
- */
-export const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: "obank", label: "O!Bank", qr: obankQr },
-  { id: "elkart", label: "Элкарт", qr: elkartQr },
-];
+export const PAY_METHOD_ID = "payqr";

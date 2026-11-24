@@ -1,7 +1,3 @@
-/**
- * Telegram-бот для админов: новые оплаты с кнопками ✅/❌, статусы заказов, тревоги, команды.
- * Слушается только тех, чьи ID указаны в TELEGRAM_ADMIN_IDS.
- */
 import { addAdmin, claimSuperadmin, getAdmin, getSuperadmin, isAdmin, isSuperadmin, listAdmins, prepareClaimCode, removeAdmin } from "./admins.ts";
 import { decideLogin, destroySessionsOf, findLoginByCode } from "./auth.ts";
 import { getMarkupPercent, setMarkupPercent, syncProducts } from "./catalog.ts";
@@ -24,12 +20,12 @@ import {
   type Order,
   type OrderEvent,
 } from "./orders.ts";
+import { savePromo, setPromoActive } from "./promos.ts";
 import { getRates } from "./rates.ts";
 import { readFileSync } from "node:fs";
-import { answerCallback, editMessage, esc, sendMessage, sendPhoto, tg, type Keyboard, type TgUpdate } from "./telegram.ts";
+import { answerCallback, editMessage, esc, sendDocument, sendMessage, sendPhoto, tg, type Keyboard, type TgUpdate } from "./telegram.ts";
 
 let botUsername: string | null = null;
-/** Имя бота (для ссылки входа в админку); null — бот не запущен. */
 export const getBotUsername = () => botUsername;
 
 const fmtTime = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "—");
@@ -96,8 +92,6 @@ function orderKeyboard(o: Order): Keyboard {
   }
 }
 
-// ---------------------------------------------------------------- рассылка
-
 async function toAdmins(text: string, keyboard?: Keyboard): Promise<{ chatId: number; messageId: number }[]> {
   const sent: { chatId: number; messageId: number }[] = [];
   for (const { tg_id: chatId } of listAdmins()) {
@@ -111,7 +105,6 @@ async function toAdmins(text: string, keyboard?: Keyboard): Promise<{ chatId: nu
   return sent;
 }
 
-/** Скриншот оплаты — отдельным сообщением перед карточкой. */
 async function sendReceipt(o: Order): Promise<void> {
   const file = receiptFile(o);
   if (!file) return;
@@ -121,14 +114,15 @@ async function sendReceipt(o: Order): Promise<void> {
   } catch {
     return;
   }
+  const ext = file.split(".").pop();
+  const send = ext === "pdf" ? sendDocument : sendPhoto;
   for (const { tg_id } of listAdmins()) {
-    await sendPhoto(tg_id, data, `receipt-${o.id}.${file.split(".").pop()}`, `🧾 Чек к заказу <b>#${o.id}</b> · ${som(o.amount)}\nПроверь перевод в банке — скриншот можно подделать.`).catch(
-      (e: Error) => log.warn(`telegram photo to ${tg_id} failed`, e.message),
+    await send(tg_id, data, `receipt-${o.id}.${ext}`, `🧾 Чек к заказу <b>#${o.id}</b> · ${som(o.amount)}\nПроверь перевод в банке — чек можно подделать.`).catch(
+      (e: Error) => log.warn(`telegram receipt to ${tg_id} failed`, e.message),
     );
   }
 }
 
-/** Карточка заказа у всех админов: создать или обновить. */
 async function syncOrderCard(o: Order, forceNew = false): Promise<void> {
   if (forceNew || o.tg_messages.length === 0) {
     const sent = await toAdmins(orderText(o), orderKeyboard(o));
@@ -145,12 +139,11 @@ async function syncOrderCard(o: Order, forceNew = false): Promise<void> {
 }
 
 async function onOrderEvent(e: OrderEvent): Promise<void> {
-  const fresh = getOrder(e.order.id) ?? e.order; // tg_messages могли обновиться
+  const fresh = getOrder(e.order.id) ?? e.order;
   if (e.kind === "paid") {
     await sendReceipt(fresh);
     return syncOrderCard(fresh);
   }
-  // Неоплаченные и истёкшие без карточки — админу неинтересны.
   if (fresh.tg_messages.length === 0 && ["awaiting_payment", "expired"].includes(fresh.status)) return;
   await syncOrderCard(fresh);
   if (e.kind === "donix_error") {
@@ -160,8 +153,6 @@ async function onOrderEvent(e: OrderEvent): Promise<void> {
     await toAdmins(`🚨 <b>Заказ #${fresh.id}: ${fresh.status === "failed" ? "ошибка Donix" : "возврат от Donix"}</b>\nПокупатель заплатил ${som(fresh.amount)} — повтори заказ или верни деньги.`);
   }
 }
-
-// ---------------------------------------------------------------- команды
 
 const HELP = [
   "<b>Команды</b>",
@@ -300,20 +291,19 @@ async function handleCommand(chatId: number, fromId: number, text: string): Prom
       return;
     }
     case "/promo": {
-      const code = args[0]?.toUpperCase();
-      const percent = Number(args[1]?.replace(",", "."));
-      const limit = args[2] ? Number(args[2]) : null;
-      if (!code || !/^[A-Z0-9_-]{3,30}$/.test(code) || !Number.isFinite(percent) || percent <= 0 || percent > 90 || (limit !== null && !(limit > 0)))
-        return void (await sendMessage(chatId, "Пример: /promo ITACHI5 5 100 — 5% скидки, 100 использований (лимит можно не указывать)"));
-      db.prepare(
-        "INSERT INTO promo_codes (code, percent, max_uses, used, active, created_at) VALUES (?, ?, ?, 0, 1, ?) ON CONFLICT(code) DO UPDATE SET percent = excluded.percent, max_uses = excluded.max_uses, active = 1",
-      ).run(code, percent, limit, new Date().toISOString());
-      await sendMessage(chatId, `🎁 Промокод <code>${esc(code)}</code>: −${percent}%${limit ? `, ${limit} использований` : ", без лимита"}`);
+      const usage = "Пример: /promo ITACHI5 5 100 — 5% скидки, 100 использований (лимит можно не указывать)";
+      if (!args[0] || !args[1]) return void (await sendMessage(chatId, usage));
+      try {
+        const p = savePromo({ code: args[0], percent: Number(args[1].replace(",", ".")), maxUses: args[2] ? Number(args[2]) : null });
+        await sendMessage(chatId, `🎁 Промокод <code>${esc(p.code)}</code>: −${p.percent}%${p.maxUses ? `, ${p.maxUses} использований` : ", без лимита"}`);
+      } catch (e) {
+        await sendMessage(chatId, `${esc((e as Error).message)}\n${usage}`);
+      }
       return;
     }
     case "/promo_off": {
+      const n = args[0] ? setPromoActive(args[0], false) : false;
       const code = args[0]?.toUpperCase();
-      const n = code ? db.prepare("UPDATE promo_codes SET active = 0 WHERE code = ?").run(code).changes : 0;
       await sendMessage(chatId, n ? `Промокод ${esc(code)} выключен.` : "Промокод не найден.");
       return;
     }
@@ -351,7 +341,6 @@ async function handleCallback(q: NonNullable<TgUpdate["callback_query"]>): Promi
   }
   const order = id ? getOrder(id) : undefined;
   if (!order) return void (await answerCallback(q.id, "Заказ не найден", true));
-  // Запомнить это сообщение, чтобы оно тоже обновлялось.
   if (q.message && !order.tg_messages.some((m) => m.chatId === q.message!.chat.id && m.messageId === q.message!.message_id)) {
     saveTgMessages(order.id, [...order.tg_messages, { chatId: q.message.chat.id, messageId: q.message.message_id }]);
   }
@@ -380,7 +369,6 @@ async function handleCallback(q: NonNullable<TgUpdate["callback_query"]>): Promi
   }
 }
 
-/** Кому уже сообщили суперадмину «написал боту» — не спамим. */
 const announced = new Set<number>();
 
 async function handleStranger(msg: NonNullable<TgUpdate["message"]>): Promise<void> {
@@ -406,7 +394,6 @@ async function handleStranger(msg: NonNullable<TgUpdate["message"]>): Promise<vo
   }
 }
 
-/** /start login_КОД — запрос входа в админку с сайта. */
 async function handleLoginStart(msg: NonNullable<TgUpdate["message"]>, code: string): Promise<void> {
   if (!getAdmin(msg.from?.id)) {
     await sendMessage(msg.chat.id, `Вход в админку доступен только админам.\nВаш Telegram ID: <code>${msg.from?.id}</code>`);
@@ -437,8 +424,6 @@ async function handleUpdate(u: TgUpdate): Promise<void> {
   await handleCommand(msg.chat.id, msg.from.id, msg.text);
 }
 
-// ---------------------------------------------------------------- запуск
-
 export function startBot(): void {
   if (!config.telegram.token) {
     log.warn("TELEGRAM_BOT_TOKEN не задан — бот выключен");
@@ -446,7 +431,6 @@ export function startBot(): void {
   }
   prepareClaimCode();
 
-  // События заказов → обновления у админов. Последовательно, чтобы карточки не дублировались.
   let queue = Promise.resolve();
   orderEvents.on("event", (e) => {
     queue = queue.then(() => onOrderEvent(e)).catch((err) => log.error("bot event failed", err));

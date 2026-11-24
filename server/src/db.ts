@@ -56,7 +56,7 @@ db.exec(`
     base_price       INTEGER NOT NULL,   -- цена товара в сомах до скидки
     discount_percent REAL NOT NULL DEFAULT 0,
     promo_code       TEXT,
-    amount           INTEGER NOT NULL,   -- точная (уникальная) сумма к оплате, сом
+    amount           INTEGER NOT NULL,   -- сумма к оплате, сом
     cost_usd         REAL NOT NULL,      -- сколько спишет Donix (на момент заказа)
     sender_name      TEXT,
     pay_method       TEXT,
@@ -79,13 +79,10 @@ db.exec(`
   );
 `);
 
-// Миграции для уже созданных баз.
 for (const sql of ["ALTER TABLE orders ADD COLUMN receipt_path TEXT"]) {
   try {
     db.exec(sql);
-  } catch {
-    /* колонка уже есть */
-  }
+  } catch {}
 }
 
 export const nowIso = (): string => new Date().toISOString();
@@ -99,7 +96,6 @@ export function setSetting(key: string, value: string): void {
   db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(key, value);
 }
 
-/** Выполнить функцию в транзакции. */
 export function tx<T>(fn: () => T): T {
   db.exec("BEGIN IMMEDIATE");
   try {

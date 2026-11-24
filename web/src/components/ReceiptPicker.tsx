@@ -1,19 +1,17 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { prepareReceipt } from "../lib/image";
+import { isPdf, prepareReceipt } from "../lib/image";
 
 interface Props {
-  /** Загружает подготовленную картинку на сервер. */
   upload: (image: Blob) => Promise<void>;
-  /** Чек уже был загружен раньше (например, после перезагрузки страницы). */
   alreadyUploaded: boolean;
   disabled?: boolean;
 }
 
-/** Поле «Скриншот оплаты»: выбор файла, превью, загрузка. */
 export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Props) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pdfName, setPdfName] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "uploading" | "done" | "error">(alreadyUploaded ? "done" : "idle");
   const [error, setError] = useState("");
 
@@ -27,9 +25,11 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
     setState("uploading");
     try {
       const image = await prepareReceipt(file);
+      const pdf = isPdf(image);
+      setPdfName(pdf ? file.name : null);
       setPreview((old) => {
         if (old) URL.revokeObjectURL(old);
-        return URL.createObjectURL(image);
+        return pdf ? null : URL.createObjectURL(image);
       });
       await upload(image);
       setState("done");
@@ -44,7 +44,7 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
   return (
     <div className="receipt-picker">
       <span className="receipt-picker__label">
-        Скриншот оплаты (чек) <em>обязательно</em>
+        Чек оплаты — скриншот или PDF <em>обязательно</em>
       </span>
       <label
         htmlFor={inputId}
@@ -55,11 +55,17 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
           if (!disabled) void onPick(e.dataTransfer.files[0]);
         }}
       >
-        {preview ? <img src={preview} alt="Прикреплённый чек" className="receipt-picker__preview" /> : <span className="receipt-picker__icon" aria-hidden="true">🧾</span>}
+        {preview ? (
+          <img src={preview} alt="Прикреплённый чек" className="receipt-picker__preview" />
+        ) : (
+          <span className="receipt-picker__icon" aria-hidden="true">
+            {pdfName ? "📄" : "🧾"}
+          </span>
+        )}
         <span className="receipt-picker__text">
           {state === "uploading" && "Загружаю…"}
-          {state === "done" && "✓ Чек прикреплён — нажми, чтобы заменить"}
-          {state === "idle" && "Нажми, чтобы прикрепить скриншот перевода"}
+          {state === "done" && (pdfName ? `✓ ${pdfName} — нажми, чтобы заменить` : "✓ Чек прикреплён — нажми, чтобы заменить")}
+          {state === "idle" && "Нажми, чтобы прикрепить скриншот или PDF чека"}
           {state === "error" && "Попробуй другой файл"}
         </span>
       </label>
@@ -67,7 +73,7 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf,.pdf"
         className="receipt-picker__input"
         disabled={disabled || state === "uploading"}
         onChange={(e) => void onPick(e.target.files?.[0])}

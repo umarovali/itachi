@@ -17,10 +17,10 @@ async function main() {
   await refreshRates();
   await syncProducts().catch((e) => log.error("catalog sync failed — проверьте DONIX_API_KEY / DONIX_BASE_URL", e.message ?? e));
 
-  every(60 * 60_000, refreshRates); // курсы — раз в час
-  every(30 * 60_000, syncProducts); // каталог — раз в 30 минут
-  every(60_000, expireOrders); // неоплаченные заказы
-  every(2 * 60_000, pollStuckOrders); // запасной путь, если вебхук не дошёл
+  every(60 * 60_000, refreshRates);
+  every(30 * 60_000, syncProducts);
+  every(60_000, expireOrders);
+  every(2 * 60_000, pollStuckOrders);
 
   createApp().listen(config.port, () => log.info(`API запущен: http://localhost:${config.port}`));
   startBot();

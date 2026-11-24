@@ -12,8 +12,6 @@ import { log } from "./log.ts";
 import { adminRouter } from "./admin-http.ts";
 import { applyDonixStatus, attachReceipt, cancelByCustomer, checkPromo, createOrder, getOrder, markPaid, publicOrder, UserError } from "./orders.ts";
 
-// ---------------------------------------------------------------- простая защита от спама
-
 const hits = new Map<string, { count: number; reset: number }>();
 function rateLimit(name: string, max: number, windowMs: number) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -33,8 +31,6 @@ setInterval(() => {
 const wrap = (fn: (req: Request, res: Response) => Promise<unknown> | unknown) => (req: Request, res: Response, next: NextFunction) =>
   Promise.resolve(fn(req, res)).catch(next);
 
-// ---------------------------------------------------------------- вебхук Donix
-
 function verifySignature(raw: Buffer, header: string | undefined): boolean {
   if (!config.donix.webhookSecret || !header) return false;
   const expected = Buffer.from("sha256=" + createHmac("sha256", config.donix.webhookSecret).update(raw).digest("hex"));
@@ -44,7 +40,6 @@ function verifySignature(raw: Buffer, header: string | undefined): boolean {
 
 export function handleDonixWebhook(body: unknown): void {
   const b = (body ?? {}) as Record<string, unknown>;
-  // Donix повторяет вебхук до 3 раз — обрабатываем каждое событие один раз.
   if (b.order_id || b.external_id) {
     const key = `${b.order_id ?? b.external_id}:${b.status ?? ""}`;
     const fresh = db.prepare("INSERT OR IGNORE INTO webhook_events (key, received_at) VALUES (?, ?)").run(key, nowIso()).changes > 0;
@@ -58,15 +53,11 @@ export function handleDonixWebhook(body: unknown): void {
   });
 }
 
-// ---------------------------------------------------------------- приложение
-
 export function createApp() {
   const app = express();
   app.disable("x-powered-by");
-  // За прокси (nginx на VPS, балансировщик Render) — чтобы req.ip был IP покупателя.
   app.set("trust proxy", config.trustProxy);
 
-  // Вебхук — ДО express.json: подпись считается по «сырому» телу.
   app.post("/api/webhooks/donix", express.raw({ type: "*/*", limit: "100kb" }), (req, res) => {
     const raw = req.body as Buffer;
     if (!verifySignature(raw, req.header("x-donix-signature"))) {
@@ -82,13 +73,12 @@ export function createApp() {
     res.json({ ok: true });
   });
 
-  // Чек оплаты — картинка «как есть» (до express.json). Тип проверяется по содержимому.
   app.post(
     "/api/orders/:id/receipt",
     rateLimit("receipt", 10, 10 * 60_000),
-    express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: "6mb" }),
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp", "application/pdf"], limit: "6mb" }),
     (req, res) => {
-      if (!Buffer.isBuffer(req.body) || req.body.length === 0) throw new UserError("Прикрепи картинку JPG или PNG");
+      if (!Buffer.isBuffer(req.body) || req.body.length === 0) throw new UserError("Прикрепи скриншот (JPG/PNG) или PDF чека");
       res.json(publicOrder(attachReceipt(req.params.id.toUpperCase(), req.body)));
     },
   );
@@ -156,7 +146,6 @@ export function createApp() {
 
   app.use("/api", (_req, res) => res.status(404).json({ error: "Not found" }));
 
-  // Собранные сайт и админка (npm run build) — тот же домен, что и API.
   const root = join(import.meta.dirname, "..", "..");
   const serveSpa = (prefix: string, dir: string) => {
     if (!existsSync(join(dir, "index.html"))) return;
@@ -167,7 +156,6 @@ export function createApp() {
   serveSpa("/admin/", join(root, "admin", "dist"));
   serveSpa("/", join(root, "web", "dist"));
 
-  // Ошибки: понятный текст покупателю, подробности — только в лог.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof UserError) return res.status(err.status).json({ error: err.message });
     if (err instanceof z.ZodError || (err as { type?: string })?.type === "entity.parse.failed")

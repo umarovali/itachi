@@ -1,8 +1,3 @@
-/**
- * ТЕСТОВЫЙ Donix — работает, пока в .env нет DONIX_API_KEY.
- * Ничего никуда не отправляет: заказы «выполняются» через 5 секунд и присылают
- * себе вебхук, как настоящий Donix. Если UID оканчивается на 0 — заказ «failed».
- */
 import type { DonixClient, DonixOrder, DonixProduct } from "./donix.ts";
 import { DonixError } from "./donix-error.ts";
 
@@ -52,7 +47,6 @@ const PRODUCTS: DonixProduct[] = [
 let balanceUsd = 50;
 const orders = new Map<string, DonixOrder & { externalId: string }>();
 
-/** Куда мок «шлёт вебхук» — подключается в index.ts. */
 let onWebhook: ((body: { event: string; order_id: string; external_id: string; status: string; price: string; currency: string }) => void) | null = null;
 export const setMockWebhookHandler = (fn: typeof onWebhook) => {
   onWebhook = fn;

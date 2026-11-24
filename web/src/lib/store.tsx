@@ -7,9 +7,7 @@ interface StoreValue {
   catalogError: string;
   currency: CurrencyCode;
   setCurrency: (code: CurrencyCode) => void;
-  /** Цена товара в сомах (null — каталог ещё не загружен). */
   priceOf: (product: Product) => number | null;
-  /** Сумма в сомах → текст для покупателя: «95 сом» или «≈ 1 240 ₸». */
   display: (som: number) => string;
 }
 
