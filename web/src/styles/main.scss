@@ -3,8 +3,6 @@
 
 @use "../components/ProductCard";
 @use "../components/Stepper";
-@use "../components/Embers";
-@use "../components/SharinganLogo";
 @use "../components/SiteHeader";
 @use "../components/CurrencySwitcher";
 @use "../components/GameCard";
@@ -12,5 +10,6 @@
 @use "../components/Checkout";
 @use "../components/Footer";
 @use "../pages/Home/Home";
+@use "./art";
+@use "./winter";
 
-@use "./enhancements";

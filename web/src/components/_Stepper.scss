@@ -1,10 +1,12 @@
 @use "../styles/abstracts/variables" as v;
 .stepper {
-  list-style: none; display: flex; gap: 8px; padding: 0; margin: 0 0 26px;
+  list-style:none; display:flex; gap:8px; padding:0; margin:0 0 26px;
   &__step { display:flex; align-items:center; gap:8px; flex:1; color:v.$muted; font-size:14px; }
   &__dot { width:28px; height:28px; border-radius:50%; border:1px solid v.$line; display:grid; place-items:center; font-size:12px; flex-shrink:0; }
-  &__step--current { color:v.$ink; .stepper__dot { border-color:v.$crimson; color:v.$crimson; background:rgba(200,30,44,.12); } }
-  &__step--done .stepper__dot { border-color:v.$crimson; background:v.$crimson; color:#fff; }
+  &__step--current { color:v.$ink; .stepper__dot { border-color:v.$accent-text; color:v.$ink; } }
+  &__step--done .stepper__dot { border-color:v.$accent-text; background:v.$accent; color:v.$on-accent; }
   &__label { white-space:nowrap; }
-  @media (max-width: 520px) { &__label { display:none; } }
+  @media (max-width:520px) { &__label { display:none; } }
 }
+
+@media (max-width:360px) { .stepper { gap:4px; margin-bottom:18px; &__dot { width:26px; height:26px; } } }

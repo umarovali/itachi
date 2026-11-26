@@ -5,7 +5,7 @@
     grid-column: 1 / -1;
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     .btn { padding: 11px 16px; }
-    &__ok { color: #45d483; font-size: 14px; b { color: v.$ink; } }
+    &__ok { color: v.$ok; font-size: 14px; b { color: v.$ink; } }
     &__warn { color: v.$ember; font-size: 13px; }
   }
 
@@ -18,10 +18,10 @@
   .payment-box {
     &__approx { margin-top: -8px; font-size: 15px; font-weight: 700; color: v.$muted; }
     &__notice {
-      max-width: 460px; padding: 12px 14px; border-radius: 14px;
-      border: 1px solid rgba(255,123,66,.35); background: rgba(255,123,66,.08);
+      max-width: 460px; padding: 12px 14px; border-radius: 4px;
+      border: 1px solid v.$line; background: v.$panel-2;
       color: v.$ink; font-size: 13px; line-height: 1.55; text-align: left;
-      b { color: v.$ember; }
+      b { color: v.$ink; }
     }
     &__timer {
       font-size: 13px; color: v.$muted;
@@ -32,31 +32,31 @@
       width: min(100%, 330px); display: flex; flex-direction: column; gap: 7px; text-align: left;
       span { font-size: 12px; color: v.$muted; }
       input {
-        width: 100%; padding: 14px 15px; border-radius: 12px; border: 1px solid v.$line;
-        background: v.$bg; color: v.$ink; outline: none;
-        &:focus { border-color: v.$crimson; }
+        width: 100%; padding: 14px 15px; border-radius: 4px; border: 1px solid v.$line;
+        background: v.$panel; color: v.$ink; outline: none;
+        &:focus { border-color: v.$accent-text; }
       }
     }
   }
 
-  .btn:focus-visible, input:focus-visible { outline: 2px solid v.$ember; outline-offset: 2px; }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid v.$accent; outline-offset: 2px; }
 }
 
 .order-done {
   &__spinner {
     width: 26px; height: 26px; border-radius: 50%;
-    border: 3px solid rgba(255,255,255,.35); border-top-color: #fff;
+    border: 3px solid color-mix(in srgb, v.$on-accent 35%, transparent); border-top-color: v.$on-accent;
     animation: order-spin .9s linear infinite;
   }
   &--wait {
-    .order-done__head { background: linear-gradient(180deg, #fff4e8, #fff); p { color: #c2410c; } }
-    .order-done__check { background: #f97316; box-shadow: 0 10px 24px rgba(249,115,22,.35); }
+    .order-done__head p { color: v.$ember; }
+    .order-done__check { background: v.$ember; }
   }
   &--bad {
-    .order-done__head { background: linear-gradient(180deg, #fdecec, #fff); p { color: #b91c1c; } }
-    .order-done__check { background: #dc2626; box-shadow: 0 10px 24px rgba(220,38,38,.35); }
+    .order-done__head p { color: v.$bad; }
+    .order-done__check { background: v.$bad; }
   }
-  &__note a { color: #0f172a; font-weight: 700; text-decoration: underline; }
+  &__note a { color: v.$accent-text; font-weight: 600; text-decoration: underline; }
 }
 @keyframes order-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .order-done__spinner { animation-duration: 3s; } }
@@ -64,14 +64,14 @@
 .order-page {
   padding: 48px 0 24px;
   display: flex; flex-direction: column; align-items: center; gap: 18px;
-  .eyebrow { display:inline-flex; align-items:center; gap:8px; color:v.$crimson; font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; &::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor;} }
+  .eyebrow { display:block; color:v.$muted; font-size:11px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; }
   .order-done { width: 100%; }
   &__error {
     display: flex; flex-direction: column; align-items: center; gap: 14px;
-    padding: 24px; border: 1px solid v.$line; border-radius: 18px; background: v.$panel; color: v.$ember;
+    padding: 24px; border: 1px solid v.$line; border-radius: 4px; background: v.$panel; color: v.$ember;
   }
-  .btn { padding:14px 18px; border-radius:12px; border:1px solid v.$line; font-weight:700; color:v.$muted; background:transparent; }
-  .btn--primary { background:v.$crimson; border-color:v.$crimson; color:#fff; }
+  .btn { padding:13px 18px; border-radius:4px; border:1px solid v.$line; font-weight:600; color:v.$ink; background:v.$panel; }
+  .btn--primary { background:v.$grad; border-color:transparent; color:v.$on-accent; }
 }
 
 @media (max-width: 700px) {
@@ -117,17 +117,16 @@
   &__input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   &__drop {
     display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 12px 14px; cursor: pointer;
-    border: 1.5px dashed v.$line; border-radius: 14px; background: v.$bg; color: v.$muted; font-size: 13px; line-height: 1.4;
-    transition: border-color .2s, background .2s;
-    &:hover { border-color: v.$crimson; color: v.$ink; }
-    &--done { border-style: solid; border-color: rgba(69,212,131,.55); color: #45d483; }
+    border: 1px dashed v.$line; border-radius: 4px; background: v.$panel; color: v.$muted; font-size: 13px; line-height: 1.4;
+        &:hover { border-color: v.$accent-text; color: v.$ink; }
+    &--done { border-style: solid; border-color: rgba(69,212,131,.55); color: v.$ok; }
     &--error { border-color: v.$ember; }
     &--uploading { opacity: .7; cursor: progress; }
     &--disabled { opacity: .5; pointer-events: none; }
   }
-  &__input:focus-visible + .receipt-picker__error, &__drop:focus-within { outline: 2px solid v.$ember; outline-offset: 2px; }
+  &__input:focus-visible + .receipt-picker__error, &__drop:focus-within { outline: 2px solid v.$accent; outline-offset: 2px; }
   &__icon { font-size: 26px; }
-  &__preview { width: 52px; height: 52px; object-fit: cover; border-radius: 10px; flex-shrink: 0; border: 1px solid v.$line; }
+  &__preview { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; flex-shrink: 0; border: 1px solid v.$line; }
   &__error { color: v.$ember; font-size: 12.5px; }
 }
 

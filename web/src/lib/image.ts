@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 const MAX_SIDE = 1600;
 const MAX_UPLOAD = 6 * 1024 * 1024;
 const PASS_THROUGH = ["image/jpeg", "image/png", "image/webp"];
@@ -22,10 +23,10 @@ export const isPdf = (file: Blob & { name?: string }) => file.type === "applicat
 
 export async function prepareReceipt(file: File): Promise<Blob> {
   if (isPdf(file)) {
-    if (file.size > MAX_UPLOAD) throw new Error("PDF слишком большой (больше 6 МБ). Сделай скриншот чека.");
+    if (file.size > MAX_UPLOAD) throw new Error(tr("img.pdfBig"));
     return file.type === "application/pdf" ? file : new Blob([file], { type: "application/pdf" });
   }
-  if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) throw new Error("Нужен скриншот (JPG/PNG) или PDF чека.");
+  if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) throw new Error(tr("img.need"));
   try {
     const img = await loadImage(file);
     const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
@@ -41,5 +42,5 @@ export async function prepareReceipt(file: File): Promise<Blob> {
     if (blob && blob.size <= MAX_UPLOAD) return blob;
   } catch {}
   if (PASS_THROUGH.includes(file.type) && file.size <= MAX_UPLOAD) return file;
-  throw new Error("Не удалось открыть картинку. Сделай обычный скриншот (PNG/JPG) и прикрепи его.");
+  throw new Error(tr("img.open"));
 }

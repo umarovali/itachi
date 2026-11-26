@@ -1,14 +1,16 @@
+import { GemCluster } from "./Icons";
+import { WinterHero } from "./Winter";
 import { useEffect, useMemo, useState } from "react";
 import type { Game } from "../data/games";
 import { PAY_LINK, PAY_METHOD_ID } from "../data/payment-methods";
 import { clearActiveOrder, loadActiveOrder, saveActiveOrder } from "../lib/active-order";
 import { api, type Order, type Product } from "../lib/api";
-import { CURRENCIES, PAY_CURRENCY, formatMoney } from "../lib/currency";
+import { PAY_CURRENCY, formatMoney } from "../lib/currency";
+import { trText, useI18n } from "../lib/i18n";
 import { useStore } from "../lib/store";
 import OrderReceipt from "./OrderReceipt";
 import ProductCard from "./ProductCard";
 import ReceiptPicker from "./ReceiptPicker";
-import SharinganLogo from "./SharinganLogo";
 import Stepper from "./Stepper";
 
 const TELEGRAM_RE = /^@[A-Za-z0-9_]{5,32}$/;
@@ -31,17 +33,18 @@ type Validation = { state: "idle" } | { state: "checking" } | { state: "ok"; nic
 
 export default function GameStore({ game }: { game: Game }) {
   const { catalog, catalogError, currency, priceOf, display } = useStore();
+  const { t, lang } = useI18n();
 
   const gameProducts = useMemo(() => catalog?.products.filter((p) => p.game === game.slug) ?? [], [catalog, game.slug]);
   const groups = useMemo(() => {
     const map = new Map<string, Product[]>();
     for (const p of gameProducts) {
-      const key = game.groupLabels[p.type] ?? "Товары";
+      const key = trText(game.groupLabels[p.type] ?? "Товары");
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(p);
     }
     return [...map.entries()];
-  }, [gameProducts, game.groupLabels]);
+  }, [gameProducts, game.groupLabels, lang]);
 
   const [selected, setSelected] = useState<Product | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -91,37 +94,37 @@ export default function GameStore({ game }: { game: Game }) {
   const updateField = (key: string, value: string) => setFields((prev) => ({ ...prev, [key]: value }));
 
   const checkPlayer = async () => {
-    if (!fieldsFilled) return setValidation({ state: "error", message: "Заполни данные игрока." });
+    if (!fieldsFilled) return setValidation({ state: "error", message: t("err.fillPlayer") });
     setValidation({ state: "checking" });
     try {
       const sku = (selected ?? gameProducts[0])?.sku;
-      if (!sku) return setValidation({ state: "error", message: "Каталог ещё загружается, подожди секунду." });
+      if (!sku) return setValidation({ state: "error", message: t("err.catalogWait") });
       const res = await api.validatePlayer(game.slug, sku, fields);
-      setValidation(res.ok && res.nickname ? { state: "ok", nickname: res.nickname, key: fieldsKey } : { state: "error", message: res.error ?? "ID не найден." });
+      setValidation(res.ok && res.nickname ? { state: "ok", nickname: res.nickname, key: fieldsKey } : { state: "error", message: res.error ?? t("err.idNotFound") });
     } catch (e) {
-      setValidation({ state: "error", message: (e as Error).message || "Не удалось проверить ID. Попробуй ещё раз." });
+      setValidation({ state: "error", message: (e as Error).message || t("err.checkFailed") });
     }
   };
 
   const applyPromo = async () => {
     const code = promoCode.trim().toUpperCase();
     if (!code) return;
-    setPromoMsg("Проверяю…");
+    setPromoMsg(t("checking"));
     const res = await api.checkPromo(code).catch((e: Error) => ({ ok: false, error: e.message, discountPercent: 0 }));
     if (res.ok && res.discountPercent) {
       setPromo({ code, percent: res.discountPercent });
-      setPromoMsg(`Промокод применён: −${res.discountPercent}%`);
+      setPromoMsg(t("promo.ok", { p: res.discountPercent }));
     } else {
       setPromo(null);
-      setPromoMsg(res.error ?? "Промокод не подошёл.");
+      setPromoMsg(res.error ?? t("promo.fail"));
     }
   };
 
   const goToPayment = async () => {
-    if (!selected) return setStatus("Сначала выбери товар.");
-    if (!fieldsFilled) return setStatus("Заполни данные игрока.");
-    if (!validated) return setStatus("Нажми «Проверить», чтобы убедиться, что ID верный.");
-    if (!TELEGRAM_RE.test(telegram.trim())) return setStatus("Укажи Telegram-ник в формате @username.");
+    if (!selected) return setStatus(t("err.selectItem"));
+    if (!fieldsFilled) return setStatus(t("err.fillPlayer"));
+    if (!validated) return setStatus(t("err.pressCheck"));
+    if (!TELEGRAM_RE.test(telegram.trim())) return setStatus(t("err.telegram"));
     setStatus("");
     setBusy(true);
     try {
@@ -145,8 +148,8 @@ export default function GameStore({ game }: { game: Game }) {
 
   const confirmPaid = async () => {
     if (!order) return;
-    if (!order.hasReceipt) return setStatus("Прикрепи чек оплаты (скриншот или PDF).");
-    if (senderName.trim().length < 2) return setStatus("Укажи имя отправителя — так мы быстрее найдём твой перевод.");
+    if (!order.hasReceipt) return setStatus(t("err.receipt"));
+    if (senderName.trim().length < 2) return setStatus(t("err.sender"));
     setStatus("");
     setBusy(true);
     try {
@@ -189,27 +192,26 @@ export default function GameStore({ game }: { game: Game }) {
     <div className={`game-store game-store--${game.accent}`}>
       <section className="game-store__hero">
         <div className="game-store__copy">
-          <span className="eyebrow">ITACHI STORE / {game.shortTitle}</span>
+          <span className="eyebrow">FaaPay / {game.shortTitle}</span>
           <h1>
-            Пополнение <span>{game.title}</span>
+            {t("gs.title").split("{game}").flatMap((part, i) => (i === 0 ? [part] : [<span key={i}>{game.title}</span>, part]))}
           </h1>
-          <p>{game.description} Выбери пакет, введи данные игрока и оплати через свой банк.</p>
+          <p>{trText(game.description)} {t("gs.desc")}</p>
         </div>
-        <div className="game-store__emblem">
-          <SharinganLogo size={210} />
-        </div>
+        <GemCluster />
+        <WinterHero />
       </section>
 
       <section className="game-store__catalog">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Каталог</span>
-            <h2>Выбери пакет</h2>
+            <span className="eyebrow">{t("nav.catalog")}</span>
+            <h2>{t("catalog.pick")}</h2>
           </div>
-          <span className="game-store__count">{gameProducts.length} предложений</span>
+          <span className="game-store__count">{t("catalog.count", { n: gameProducts.length })}</span>
         </div>
-        {catalogError && <div className="status status--warn">{catalogError}</div>}
-        {!catalog && !catalogError && <div className="status">Загружаю каталог…</div>}
+        {catalogError && <div className="status status--warn">{t("catalog.error")}</div>}
+        {!catalog && !catalogError && <div className="status">{t("catalog.loading")}</div>}
         {groups.map(([title, items]) => (
           <div className="game-store__group" key={title}>
             <h3>{title}</h3>
@@ -235,7 +237,7 @@ export default function GameStore({ game }: { game: Game }) {
         <div className="section-head">
           <div>
             <span className="eyebrow">Checkout</span>
-            <h2>Оформление заказа</h2>
+            <h2>{t("checkout.title")}</h2>
           </div>
         </div>
         <Stepper current={step} />
@@ -257,18 +259,18 @@ export default function GameStore({ game }: { game: Game }) {
                   </span>
                 </>
               ) : (
-                <span>Товар не выбран</span>
+                <span>{t("none")}</span>
               )}
             </div>
 
             <div className="order-form">
               {game.fields.map((field) => (
                 <label key={field.key}>
-                  <span>{field.label}</span>
+                  <span>{trText(field.label)}</span>
                   <input
                     value={fields[field.key] ?? ""}
                     onChange={(e) => updateField(field.key, e.target.value)}
-                    placeholder={field.placeholder}
+                    placeholder={trText(field.placeholder)}
                     autoComplete="off"
                     spellCheck={false}
                   />
@@ -277,19 +279,19 @@ export default function GameStore({ game }: { game: Game }) {
 
               <div className="player-check">
                 <button type="button" className="btn btn--ghost" onClick={checkPlayer} disabled={validation.state === "checking" || !fieldsFilled}>
-                  {validation.state === "checking" ? "Проверяю…" : "Проверить ID"}
+                  {validation.state === "checking" ? t("checking") : t("check")}
                 </button>
                 {validated && validation.state === "ok" && (
                   <span className="player-check__ok">
-                    ✓ Игрок: <b>{validation.nickname}</b>
+                    ✓ {t("player")} <b>{validation.nickname}</b>
                   </span>
                 )}
-                {validation.state === "ok" && !validated && <span className="player-check__warn">Данные изменились — проверь ещё раз</span>}
+                {validation.state === "ok" && !validated && <span className="player-check__warn">{t("changed")}</span>}
                 {validation.state === "error" && <span className="player-check__warn">{validation.message}</span>}
               </div>
 
               <label>
-                <span>Промокод</span>
+                <span>{t("promo.label")}</span>
                 <div className="promo-row">
                   <input
                     value={promoCode}
@@ -298,7 +300,7 @@ export default function GameStore({ game }: { game: Game }) {
                       setPromo(null);
                       setPromoMsg("");
                     }}
-                    placeholder="Введите промокод"
+                    placeholder={t("promo.ph")}
                     autoComplete="off"
                   />
                   <button type="button" className="btn btn--ghost" onClick={applyPromo} disabled={!promoCode.trim()}>
@@ -308,7 +310,7 @@ export default function GameStore({ game }: { game: Game }) {
               </label>
               <label>
                 <span>
-                  Telegram <em>обязательно</em>
+                  Telegram <em>{t("tg.required")}</em>
                 </span>
                 <input
                   value={telegram}
@@ -322,7 +324,7 @@ export default function GameStore({ game }: { game: Game }) {
               {promoMsg && <div className={`status ${promo ? "status--ok" : "status--warn"}`}>{promoMsg}</div>}
 
               <button type="button" className="btn btn--primary" onClick={goToPayment} disabled={busy}>
-                {busy ? "Создаю заказ…" : "Перейти к оплате"}
+                {busy ? t("btn.creating") : t("btn.toPay")}
               </button>
             </div>
           </>
@@ -330,28 +332,22 @@ export default function GameStore({ game }: { game: Game }) {
 
         {step === 2 && order && (
           <div className="payment-box">
-            <p>Нажми «Оплатить», выбери свой банк, введи точную сумму и переведи. Потом прикрепи скриншот или PDF чека и нажми «Я оплатил».</p>
+            <p>{t("pay.instr")}</p>
             <div className="payment-box__amount">{formatMoney(order.amount, PAY_CURRENCY)}</div>
             {foreign && <div className="payment-box__approx">{display(order.amount)}</div>}
             <div className="payment-box__notice">
-              <b>Переведи ровно эту сумму</b>, иначе заказ придётся уточнять.
-              {foreign && (
-                <>
-                  {" "}
-                  Оплата проходит в сомах: твой банк сам переведёт {CURRENCIES[currency].name.toLowerCase()} в сомы по своему курсу, поэтому
-                  списанная сумма может немного отличаться.
-                </>
-              )}
+              <b>{t("pay.exact")}</b>{t("pay.exactRest")}
+              {foreign && <> {t("pay.foreign")}</>}
             </div>
 
             <a className="btn btn--primary payment-box__pay" href={PAY_LINK} target="_blank" rel="noreferrer">
-              Оплатить {formatMoney(order.amount, PAY_CURRENCY)}
+              {t("pay.btn", { amount: formatMoney(order.amount, PAY_CURRENCY) })}
             </a>
-            <small className="payment-box__hint">Откроется выбор банка — реквизиты уже подставлены, останется ввести сумму.</small>
+            <small className="payment-box__hint">{t("pay.hint")}</small>
 
             {countdown && (
               <div className={`payment-box__timer ${countdown.expired ? "payment-box__timer--expired" : ""}`}>
-                {countdown.expired ? "Время на оплату истекло — оформи заказ заново." : <>Оплатить в течение: <b>{countdown.text}</b></>}
+                {countdown.expired ? t("pay.expired") : <>{t("pay.within")} <b>{countdown.text}</b></>}
               </div>
             )}
 
@@ -367,15 +363,15 @@ export default function GameStore({ game }: { game: Game }) {
             />
 
             <label className="payment-box__sender">
-              <span>Имя отправителя (как в банке)</span>
-              <input value={senderName} onChange={(e) => setSenderName(e.target.value)} placeholder="Например: Айбек С." autoComplete="off" maxLength={60} />
+              <span>{t("sender.label")}</span>
+              <input value={senderName} onChange={(e) => setSenderName(e.target.value)} placeholder={t("sender.ph")} autoComplete="off" maxLength={60} />
             </label>
 
             <button type="button" className="btn btn--primary" onClick={confirmPaid} disabled={busy || countdown?.expired}>
-              {busy ? "Отправляю…" : "Я оплатил"}
+              {busy ? t("pay.sending") : t("pay.paid")}
             </button>
             <button type="button" className="btn btn--ghost" onClick={cancelOrder} disabled={busy}>
-              Отменить заказ
+              {t("pay.cancel")}
             </button>
           </div>
         )}

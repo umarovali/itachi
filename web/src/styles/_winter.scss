@@ -1,0 +1,80 @@
+@use "./abstracts/variables" as v;
+
+// ===== Падающий снег (canvas поверх страницы, кликам не мешает) =====
+.snowfall { position:fixed; inset:0; z-index:50; pointer-events:none; }
+
+// ===== Баннер: снеговик + сугроб по нижней кромке =====
+.hero-wrap { position:relative; }
+$snow-back: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20480%20120%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3ClinearGradient%20id=%22g%22%20x1=%220%22%20y1=%220%22%20x2=%220%22%20y2=%221%22%3E%3Cstop%20offset=%220%22%20stop-color=%22%23ffffff%22/%3E%3Cstop%20offset=%22.55%22%20stop-color=%22%23ece5ff%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23cdbcf7%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d=%22M0,70%20C60,34%20110,26%20170,64%20S270,40%20330,60%20S430,34%20480,70%20L480,120%20L0,120%20Z%22%20fill=%22url(%23g)%22/%3E%3C/svg%3E");
+$snow-front: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20480%20120%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3ClinearGradient%20id=%22g%22%20x1=%220%22%20y1=%220%22%20x2=%220%22%20y2=%221%22%3E%3Cstop%20offset=%220%22%20stop-color=%22%23ffffff%22/%3E%3Cstop%20offset=%22.55%22%20stop-color=%22%23ece5ff%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23cdbcf7%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath%20d=%22M0,58%20C60,22%20110,14%20170,52%20S270,28%20330,48%20S430,22%20480,58%20L480,120%20L0,120%20Z%22%20fill=%22url(%23g)%22/%3E%3C/svg%3E");
+.winter-edge {
+  position:absolute; left:-1.5%; right:-1.5%; bottom:-34px; height:84px; z-index:3; pointer-events:none;
+  background:$snow-front repeat-x 0 100% / 520px 100%, $snow-back repeat-x 190px 100% / 380px 82%;
+  filter:drop-shadow(0 -4px 10px rgba(124,77,255,.25));
+}
+.winter-hero__snowman {
+  position:absolute; right:3%; bottom:2px; z-index:2; width:min(210px, 24%); height:auto; pointer-events:none;
+  filter:drop-shadow(0 10px 16px rgba(30, 10, 90, .35));
+}
+.hero:has(.winter-hero__snowman) {
+  .gem-cluster { width:52%; }
+  .gem--1 { width:30%; right:38%; top:10%; }
+  .gem--2 { display:none; }
+  .gem--3 { width:11%; right:62%; bottom:20%; }
+  .gem--4 { width:9%; right:16%; top:8%; }
+}
+.game-store__hero .winter-hero__snowman { width:min(170px, 24%); }
+
+// ===== Украшения по краям страницы (позиции считаются от краёв контейнера) =====
+.page { position:relative; }
+.winter-decor {
+  position:absolute; inset:0; z-index:40; pointer-events:none; overflow:visible;
+  .wd { position:absolute; height:auto; max-width:none; display:none; filter:drop-shadow(0 10px 18px rgba(30, 10, 90, .28)); }
+  &__snow {
+    position:absolute; left:50%; bottom:-40px; width:100vw; height:100px; transform:translateX(-50%);
+    background:$snow-front repeat-x 0 100% / 520px 100%, $snow-back repeat-x 190px 100% / 380px 82%;
+    filter:drop-shadow(0 -4px 10px rgba(124,77,255,.25));
+  }
+  // нижние подарки видны на любых экранах
+  .wd--gifts-br { display:block; right:-34px; bottom:-6px; width:150px; }
+  .wd--gifts-bl { display:block; left:-24px; bottom:-8px; width:130px; }
+}
+.page--winter .site-footer { padding-bottom:84px; }
+.page--winter .site-header { position:relative; z-index:45; }
+
+@media (min-width:900px) {
+  .winter-decor {
+    // ветка с шаром в левом верхнем углу (перевёрнутая ёлка уходит за край экрана)
+    .wd--branch { display:block; left:-140px; top:-158px; width:250px; transform:rotate(135deg); clip-path:inset(15% 0 0 0); }
+    .wd--tree-right { display:block; right:-114px; top:125px; width:182px; }
+    .wd--tree-left { display:block; left:-186px; top:540px; width:270px; }
+    .wd--gifts-mid { display:block; right:-130px; top:770px; width:190px; }
+    .wd--tree-bl { display:block; left:-150px; bottom:12px; width:250px; }
+    .wd--gifts-bl { left:96px; bottom:6px; width:150px; }
+    .wd--gifts-br2 { display:block; right:176px; bottom:4px; width:118px; }
+    .wd--gifts-br { right:-44px; bottom:0; width:225px; }
+  }
+}
+@media (min-width:1500px) {
+  .winter-decor {
+    .wd--tree-left { left:-230px; }
+    .wd--tree-right { right:-170px; }
+    .wd--gifts-mid { right:-190px; }
+    .wd--tree-bl { left:-230px; }
+    .wd--gifts-bl { left:-40px; width:190px; }
+    .wd--gifts-br2 { right:90px; }
+    .wd--gifts-br { right:-120px; width:260px; }
+  }
+}
+@media (max-width:760px) {
+  .winter-hero__snowman { width:min(140px, 36%); right:2%; }
+  .winter-edge { height:60px; bottom:-18px; }
+  .winter-decor__snow { height:60px; bottom:-22px; }
+  .page--winter .site-footer { padding-bottom:60px; }
+}
+@media (max-width:420px) {
+  .winter-hero__snowman { width:96px; }
+  .winter-decor .wd--gifts-br { width:104px; right:-14px; }
+  .winter-decor .wd--gifts-bl { width:96px; left:-10px; }
+}
+@media (max-width:380px) { .winter-hero__snowman { display:none; } }

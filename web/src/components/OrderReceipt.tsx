@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { findGame } from "../data/games";
 import { api, type Order, type OrderStatus } from "../lib/api";
 import { PAY_CURRENCY, formatMoney } from "../lib/currency";
+import { trText, useI18n } from "../lib/i18n";
 
-const formatReceiptDate = (d: Date) =>
-  `${d.toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" }).replace(/\s?г\.$/, "")} г. в ${d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`;
+const formatReceiptDate = (d: Date, locale: string) =>
+  d.toLocaleString(locale, { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-const STATUS_VIEW: Record<OrderStatus, { title: string; text: string; tone: "ok" | "wait" | "bad" }> = {
-  awaiting_payment: { title: "Ждём оплату", text: "Оплати заказ, прикрепи чек и нажми «Я оплатил»", tone: "wait" },
-  payment_check: { title: "Заявка отправлена", text: "Проверяем оплату — это займёт несколько минут", tone: "wait" },
-  processing: { title: "Оплата подтверждена", text: "Пополняем аккаунт — обычно 1–5 минут", tone: "wait" },
-  completed: { title: "Готово!", text: "Пополнение зачислено на аккаунт", tone: "ok" },
-  problem: { title: "Небольшая задержка", text: "Возникла проблема при пополнении — мы уже разбираемся и напишем тебе", tone: "wait" },
-  refunded: { title: "Деньги возвращены", text: "Пополнить не получилось, деньги отправлены тебе обратно", tone: "bad" },
-  rejected: { title: "Оплата не найдена", text: "Мы не нашли твой перевод. Если ты оплатил — напиши в поддержку", tone: "bad" },
-  expired: { title: "Заказ отменён", text: "Время на оплату истекло", tone: "bad" },
+const TONES: Record<OrderStatus, "ok" | "wait" | "bad"> = {
+  awaiting_payment: "wait",
+  payment_check: "wait",
+  processing: "wait",
+  completed: "ok",
+  problem: "wait",
+  refunded: "bad",
+  rejected: "bad",
+  expired: "bad",
 };
 
 const FINAL: OrderStatus[] = ["completed", "refunded", "rejected", "expired"];
@@ -27,7 +28,8 @@ interface Props {
 export default function OrderReceipt({ order: initial, onNew }: Props) {
   const [order, setOrder] = useState(initial);
   const game = findGame(order.game);
-  const view = STATUS_VIEW[order.status];
+  const { t, locale } = useI18n();
+  const view = { title: t(`st.${order.status}.title`), text: t(`st.${order.status}.text`), tone: TONES[order.status] };
 
   useEffect(() => setOrder(initial), [initial]);
 
@@ -61,45 +63,45 @@ export default function OrderReceipt({ order: initial, onNew }: Props) {
         </p>
       </div>
       <div className="order-done__number">
-        <span>Номер заказа</span>
+        <span>{t("order.number")}</span>
         <b>#{order.id}</b>
       </div>
       <dl className="order-done__rows">
         <div>
-          <dt>Товар</dt>
+          <dt>{t("order.item")}</dt>
           <dd>{order.productName}</dd>
         </div>
         <div>
-          <dt>Игра</dt>
+          <dt>{t("order.game")}</dt>
           <dd>{game?.title ?? order.game}</dd>
         </div>
         {(game?.fields ?? []).map((f) => (
           <div key={f.key}>
-            <dt>{f.label}</dt>
+            <dt>{trText(f.label)}</dt>
             <dd className="order-done__mono">{order.fields[f.key]}</dd>
           </div>
         ))}
         {order.nickname && (
           <div>
-            <dt>Игрок</dt>
+            <dt>{t("order.player")}</dt>
             <dd>{order.nickname}</dd>
           </div>
         )}
         <div>
-          <dt>Дата</dt>
-          <dd>{formatReceiptDate(new Date(order.createdAt))}</dd>
+          <dt>{t("order.date")}</dt>
+          <dd>{formatReceiptDate(new Date(order.createdAt), locale)}</dd>
         </div>
       </dl>
       <div className="order-done__total">
-        <span>Сумма заказа</span>
+        <span>{t("order.total")}</span>
         <b>{formatMoney(order.amount, PAY_CURRENCY)}</b>
       </div>
       <p className="order-done__note">
-        Сохрани номер заказа. Статус обновляется сам. Вопросы — <a href="https://t.me/itachishop_support" target="_blank" rel="noreferrer">@itachishop_support</a>
+        {t("order.note")} <a href="https://t.me/faapay_support" target="_blank" rel="noreferrer">@faapay_support</a>
       </p>
       {onNew && (
         <button type="button" className="btn btn--primary" onClick={onNew}>
-          Новый заказ
+          {t("order.new")}
         </button>
       )}
     </div>

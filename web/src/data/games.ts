@@ -59,7 +59,7 @@ export const games: Game[] = [
     accent: "emerald",
     iconUrl: "https://play-lh.googleusercontent.com/QqZj22aXblAyYDxLQw-Gg0ycW0QkKhrDnwqgERZU9BMRXZnMlgXfq-94sikG5mEpt_I0lzZxcUzfLblmQgwYzUE%3Dw240-h480",
     groupLabels: { robux: "Robux" },
-    fields: [{ key: "uid", label: "Никнейм Roblox", placeholder: "Например: ItachiPlayer228" }],
+    fields: [{ key: "uid", label: "Никнейм Roblox", placeholder: "Например: FaaPlayer228" }],
   },
   {
     slug: "genshin-impact",

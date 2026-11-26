@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useI18n } from "../lib/i18n";
 import { isPdf, prepareReceipt } from "../lib/image";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Props) {
+  const { t } = useI18n();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
   return (
     <div className="receipt-picker">
       <span className="receipt-picker__label">
-        Чек оплаты — скриншот или PDF <em>обязательно</em>
+        {t("rc.label")} <em>{t("tg.required")}</em>
       </span>
       <label
         htmlFor={inputId}
@@ -56,17 +58,17 @@ export default function ReceiptPicker({ upload, alreadyUploaded, disabled }: Pro
         }}
       >
         {preview ? (
-          <img src={preview} alt="Прикреплённый чек" className="receipt-picker__preview" />
+          <img src={preview} alt={t("rc.alt")} className="receipt-picker__preview" />
         ) : (
           <span className="receipt-picker__icon" aria-hidden="true">
             {pdfName ? "📄" : "🧾"}
           </span>
         )}
         <span className="receipt-picker__text">
-          {state === "uploading" && "Загружаю…"}
-          {state === "done" && (pdfName ? `✓ ${pdfName} — нажми, чтобы заменить` : "✓ Чек прикреплён — нажми, чтобы заменить")}
-          {state === "idle" && "Нажми, чтобы прикрепить скриншот или PDF чека"}
-          {state === "error" && "Попробуй другой файл"}
+          {state === "uploading" && t("common.loading")}
+          {state === "done" && (pdfName ? t("rc.doneFile", { name: pdfName }) : t("rc.done"))}
+          {state === "idle" && t("rc.idle")}
+          {state === "error" && t("rc.error")}
         </span>
       </label>
       <input

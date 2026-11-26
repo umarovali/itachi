@@ -1,13 +1,54 @@
-:root {
-  --bg: #090708;
-  --bg-panel: #120b0e;
-  --bg-panel-2: #1a0e12;
-  --ink: #f7efec;
-  --muted: #a58f8b;
-  --crimson: #d52235;
-  --ember: #ff7b42;
-  --price: #ff9ca4;
-  --line: rgba(213,34,53,.2);
-  --shadow-card: 0 12px 32px rgba(0,0,0,.2);
-  --shadow-card-hover: 0 18px 46px rgba(0,0,0,.32);
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f2ff;
+  --bg-panel: #ffffff;
+  --bg-panel-2: #f0eafe;
+  --ink: #1a1033;
+  --muted: #6a6188;
+  --accent: #6d3ff0;
+  --accent-hover: #5b2fd9;
+  --accent-text: #6d3ff0;
+  --on-accent: #ffffff;
+  --grad: linear-gradient(135deg, #8b5cf6 0%, #5b2fd9 100%);
+  --hero-bg: linear-gradient(100deg, #f4eeff 0%, #e7dcff 42%, #7c4dff 78%, #3b1aa8 100%);
+  --crimson: var(--accent);
+  --ember: #b45309;
+  --price: #1a1033;
+  --line: #e3daf8;
+  --ok: #15803d;
+  --bad: #b91c1c;
+  --glow: rgba(139, 92, 246, .32);
+  --shadow-card: 0 8px 24px rgba(109, 63, 240, .10);
+  --shadow-card-hover: 0 14px 32px rgba(109, 63, 240, .24);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c0920;
+  --bg-panel: #151030;
+  --bg-panel-2: #1d1642;
+  --ink: #efeaff;
+  --muted: #a79fc7;
+  --accent: #7c4dff;
+  --accent-hover: #8f67ff;
+  --accent-text: #b79dff;
+  --on-accent: #ffffff;
+  --grad: linear-gradient(135deg, #9166ff 0%, #5b2fd9 100%);
+  --hero-bg: linear-gradient(100deg, #17103a 0%, #2a1a6e 48%, #5b2fd9 85%, #3b1aa8 100%);
+  --crimson: var(--accent);
+  --ember: #f59e0b;
+  --price: #efeaff;
+  --line: #2d2557;
+  --ok: #4ade80;
+  --bad: #f87171;
+  --glow: rgba(124, 77, 255, .38);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, .35);
+  --shadow-card-hover: 0 14px 34px rgba(124, 77, 255, .35);
+}
+
+// Телефоны (светлая тема): тёмный край баннера сдвинут вправо, чтобы текст не терялся
+@media (max-width:760px) {
+  :root[data-theme="light"] {
+    --hero-bg: linear-gradient(100deg, #f4eeff 0%, #e9dfff 64%, #7c4dff 94%, #3b1aa8 100%);
+  }
 }

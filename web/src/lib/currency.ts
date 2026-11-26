@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 export type CurrencyCode = "KGS" | "RUB" | "KZT" | "UZS";
 
 export interface CurrencyInfo {
@@ -33,7 +34,7 @@ export function formatDisplay(som: number, code: CurrencyCode, rates: Rates): st
 }
 
 export function formatMoney(amount: number, code: CurrencyCode): string {
-  return `${amount.toLocaleString("ru-RU")} ${CURRENCIES[code].symbol}`;
+  return `${amount.toLocaleString("ru-RU")} ${tr(`cur.sym.${code}`)}`;
 }
 
 const TZ_PREFIX_TO_CURRENCY: Array<[string[], CurrencyCode]> = [

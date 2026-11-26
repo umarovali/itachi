@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { CURRENCIES, CURRENCY_LIST } from "../lib/currency";
+import { useI18n } from "../lib/i18n";
 import { useStore } from "../lib/store";
 
 export default function CurrencySwitcher() {
   const { currency, setCurrency } = useStore();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = CURRENCIES[currency];
@@ -29,15 +31,15 @@ export default function CurrencySwitcher() {
         className="currency-switch__toggle"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Валюта: ${current.name}`}
+        aria-label={t("cur.label", { name: t(`cur.${current.code}`) })}
         onClick={() => setOpen((v) => !v)}
       >
         <span>{current.code}</span>
-        <span className="currency-switch__current-symbol">{current.symbol}</span>
+        <span className="currency-switch__current-symbol">{t(`cur.sym.${current.code}`)}</span>
         <span className="currency-switch__chevron" aria-hidden="true">▾</span>
       </button>
       {open && (
-        <ul className="currency-switch__menu" role="listbox" aria-label="Выбор валюты">
+        <ul className="currency-switch__menu" role="listbox" aria-label={t("cur.choose")}>
           {CURRENCY_LIST.map((c) => (
             <li key={c.code}>
               <button
@@ -51,8 +53,8 @@ export default function CurrencySwitcher() {
                 }}
               >
                 <span className="currency-switch__code">{c.code}</span>
-                <span className="currency-switch__name">{c.name}</span>
-                <span className="currency-switch__symbol">{c.symbol}</span>
+                <span className="currency-switch__name">{t(`cur.${c.code}`)}</span>
+                <span className="currency-switch__symbol">{t(`cur.sym.${c.code}`)}</span>
               </button>
             </li>
           ))}

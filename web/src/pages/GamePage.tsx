@@ -7,7 +7,7 @@ export default function GamePage() {
   const game = findGame(slug);
   if (!game) return <Navigate to="/" replace />;
   return (
-    <div className={`page-transition page--${game.slug}`} key={game.slug}>
+    <div className={`page--${game.slug}`} key={game.slug}>
       <GameStore game={game} />
     </div>
   );

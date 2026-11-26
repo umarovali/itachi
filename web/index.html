@@ -3,12 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Itachi Store</title>
+    <title>FaaPay — Магазин пополнения счета</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" />
     <meta name="description" content="Пополнение игр: Free Fire, PUBG Mobile, Mobile Legends, Roblox, Genshin Impact, Standoff 2." />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800;900&family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@1,800;1,900&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        var t = "light";
+        try { if (localStorage.getItem("faapay.theme") === "dark") t = "dark"; } catch (e) {}
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

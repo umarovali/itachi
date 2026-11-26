@@ -1,3 +1,4 @@
+import { tr } from "./i18n";
 import type { CurrencyCode, Rates } from "./currency";
 
 export interface Product {
@@ -62,10 +63,10 @@ async function request<T>(path: string, init?: { method?: string; body?: unknown
       body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
     });
   } catch {
-    throw new Error("Нет связи с сервером. Проверь интернет и попробуй ещё раз.");
+    throw new Error(tr("net.error"));
   }
   const data = (await res.json().catch(() => null)) as (T & { error?: string }) | null;
-  if (!res.ok) throw new Error(data?.error ?? `Ошибка сервера (${res.status})`);
+  if (!res.ok) throw new Error(data?.error ?? tr("srv.error", { n: res.status }));
   return data as T;
 }
 
@@ -87,10 +88,10 @@ export const api = {
         body: image,
       });
     } catch {
-      throw new Error("Нет связи с сервером. Попробуй ещё раз.");
+      throw new Error(tr("net.upload"));
     }
     const data = (await res.json().catch(() => null)) as (Order & { error?: string }) | null;
-    if (!res.ok) throw new Error(data?.error ?? `Не удалось загрузить чек (${res.status})`);
+    if (!res.ok) throw new Error(data?.error ?? tr("upload.fail", { n: res.status }));
     return data as Order;
   },
   cancelOrder: (id: string) => request<Order>(`/orders/${encodeURIComponent(id)}/cancel`, { method: "POST", body: {} }),

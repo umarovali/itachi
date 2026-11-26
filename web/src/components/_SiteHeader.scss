@@ -1,48 +1,62 @@
 @use "../styles/abstracts/variables" as v;
-
 .site-header {
-  position: sticky; top: 10px; z-index: 50;
-  margin: 10px 0 6px;
-  padding: 12px 14px 12px 16px;
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  border: 1px solid v.$line; border-radius: 22px;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(213,34,53,.14), transparent 55%),
-    rgba(18,11,14,.72);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
-  box-shadow: 0 14px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04);
+  display:flex; align-items:center; gap:18px; padding:18px 0;
+  &__brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  &__name { display:flex; flex-direction:column; line-height:1; }
+  &__wordmark { font-family:v.$font-logo; font-style:italic; font-weight:900; font-size:30px; letter-spacing:.01em; color:v.$ink; }
+  &__tag { margin-top:5px; font-size:9px; font-weight:800; letter-spacing:.12em; color:v.$ink; }
 
-  &::before {
-    content: ""; position: absolute; top: -1px; left: 12%; right: 12%; height: 1px;
-    background: linear-gradient(90deg, transparent, v.$crimson, transparent);
-    opacity: .8; pointer-events: none;
+  &__nav { display:flex; align-items:center; gap:6px; margin-inline:auto; }
+  &__link {
+    display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:v.$radius;
+    font-size:14px; font-weight:600; color:v.$ink;
+    &:hover { background:v.$panel-2; }
+    &.is-active { background:v.$grad; color:v.$on-accent; box-shadow:0 8px 20px v.$glow; }
   }
 
-  &__brand { display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; cursor: pointer; }
-  &__logo {
-    width: 40px; height: 40px; display: grid; place-items: center;
-    border: 1px solid v.$crimson; border-radius: 13px; color: #fff;
-    font-family: v.$font-display; font-weight: 800;
-    background: linear-gradient(145deg, rgba(213,34,53,.55), rgba(213,34,53,.12));
-    box-shadow: 0 0 26px rgba(213,34,53,.3);
-  }
-  &__wordmark { font-family: v.$font-display; font-weight: 800; font-size: 16px; letter-spacing: .04em; color: v.$ink; b { color: v.$crimson; } }
-
-  &__accounts {
-    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-    padding: 10px 18px; border-radius: 999px; border: 0;
-    color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
-    background: linear-gradient(135deg, v.$crimson, v.$ember);
-    box-shadow: 0 8px 22px rgba(213,34,53,.35);
-    transition: transform .2s, box-shadow .2s, filter .2s;
-    &:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 12px 28px rgba(213,34,53,.45); }
+  &__actions { display:flex; align-items:center; gap:10px; }
+  &__tg {
+    display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 18px;
+    border:1px solid v.$line; border-radius:v.$radius; background:v.$panel; color:v.$ink; font-size:14px; font-weight:600;
+    svg { color:#2aa3e6; }
+    &:hover { border-color:v.$accent-text; }
   }
 
-  @media (max-width: 560px) {
-    top: 6px; padding: 10px 10px 10px 12px; border-radius: 18px;
-    &__wordmark { font-size: 14px; }
-    &__logo { width: 34px; height: 34px; border-radius: 11px; }
-    &__accounts { padding: 9px 13px; font-size: 11px; }
+  @media (max-width:1000px) {
+    flex-wrap:wrap; row-gap:10px;
+    &__actions { margin-left:auto; }
+    &__nav { order:3; width:100%; margin:0; overflow-x:auto; padding-bottom:2px; }
+    &__link { white-space:nowrap; padding:9px 14px; }
   }
+  @media (max-width:640px) {
+    padding:12px 0;
+    &__wordmark { font-size:24px; } &__tag { font-size:7.5px; letter-spacing:.08em; }
+    &__tg { width:38px; padding:0; justify-content:center; span { display:none; } }
+  }
+}
+.theme-toggle {
+  width:40px; height:40px; display:inline-grid; place-items:center; padding:0;
+  border:1px solid v.$line; border-radius:v.$radius; background:v.$panel; color:v.$ink;
+  &:hover { border-color:v.$accent-text; color:v.$accent-text; }
+  @media (max-width:640px) { width:38px; height:38px; }
+}
+
+// ===== Узкие телефоны: 320px и меньше =====
+@media (max-width:360px) {
+  .site-header {
+    gap:8px;
+    &__actions { gap:6px; }
+    &__wordmark { font-size:22px; }
+    &__tag { font-size:6.5px; letter-spacing:.05em; }
+    &__link { padding:8px 11px; font-size:13px; gap:6px; }
+  }
+  .theme-toggle { width:36px; height:36px; }
+  .currency-switch__toggle { height:36px; padding:0 9px; gap:5px; font-size:11px; }
+  .lang-switch .currency-switch__toggle { padding:0 8px; }
+  .currency-switch__menu { min-width:160px; max-width:calc(100vw - 24px); }
+  .site-header__tg { width:36px; height:36px; }
+}
+@media (max-width:320px) {
+  .site-header { &__wordmark { font-size:20px; } &__tag { display:none; } }
+  .currency-switch__current-symbol { display:none; }
 }
